@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NeoPet AI — Your AI Tamagotchi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg: #0a0a1a;
+    --card: #12122a;
+    --accent: #7c3aed;
+    --accent2: #a78bfa;
+    --pink: #ec4899;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: rgba(124, 58, 237, 0.3);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .container {
+    max-width: 420px;
+    width: 100%;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  header h1 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+  }
+
+  header .subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .pet-display {
+    background: var(--card);
+    border-radius: 20px;
+    border: 2px solid rgba(124, 58, 237, 0.2);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pet-display::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 80%, var(--glow), transparent 70%);
+    pointer-events: none;
+  }
+
+  .stage-label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .age-label {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .pet-creature {
+    font-size: 80px;
+    line-height: 1;
+    margin: 8px 0;
+    animation: float 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+    z-index: 1;
+    user-select: none;
+  }
+
+  .pet-creature:active {
+    transform: scale(1.2);
+  }
+
+  .pet-creature.sleeping {
+    animation: sleep 4s ease-in-out infinite;
+    opacity: 0.7;
+  }
+
+  .pet-creature.eating {
+    animation: munch 0.3s ease-in-out 3;
+  }
+
+  .pet-creature.happy {
+    animation: bounce 0.5s ease-in-out 3;
+  }
+
+  .pet-creature.evolving {
+    animation: evolve 2s ease-in-out;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes sleep {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-5px) rotate(5deg); }
+  }
+
+  @keyframes munch {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1) rotate(5deg); }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px) scale(1.1); }
+  }
+
+  @keyframes evolve {
+    0% { transform: scale(1); filter: brightness(1); }
+    30% { transform: scale(0.5) rotate(360deg); filter: brightness(3); }
+    60% { transform: scale(1.5); filter: brightness(2); }
+    100% { transform: scale(1); filter: brightness(1); }
+  }
+
+  .pet-name {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    color: var(--accent2);
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .pet-mood {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-style: italic;
+    position: relative;
+    z-index: 1;
+  }
+
+  .zzz {
+    position: absolute;
+    color: var(--accent2);
+    font-size: 16px;
+    opacity: 0;
+    animation: zzzFloat 2s ease-in-out infinite;
+  }
+
+  .zzz:nth-child(1) { right: 30%; top: 20%; animation-delay: 0s; }
+  .zzz:nth-child(2) { right: 25%; top: 15%; animation-delay: 0.7s; font-size: 20px; }
+  .zzz:nth-child(3) { right: 20%; top: 10%; animation-delay: 1.4s; font-size: 24px; }
+
+  @keyframes zzzFloat {
+    0% { opacity: 0; transform: translateY(10px); }
+    50% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .stat-header span:first-child {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat-header span:last-child {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .stat-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .stat-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s ease, background 0.5s;
+  }
+
+  .stat-fill.hunger { background: linear-gradient(90deg, var(--red), var(--yellow)); }
+  .stat-fill.happiness { background: linear-gradient(90deg, var(--yellow), var(--pink)); }
+  .stat-fill.energy { background: linear-gradient(90deg, var(--yellow), var(--green)); }
+  .stat-fill.xp { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+  .action-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .action-btn {
+    background: var(--card);
+    border: 2px solid rgba(124, 58, 237, 0.2);
+    border-radius: 14px;
+    padding: 12px 8px;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .action-btn:active {
+    transform: scale(0.95);
+    border-color: var(--accent);
+    background: rgba(124, 58, 237, 0.1);
+  }
+
+  .action-btn .icon {
+    font-size: 22px;
+  }
+
+  .action-btn:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .chat-box {
+    background: var(--card);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 12px;
+    flex: 1;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-box h3 {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 150px;
+  }
+
+  .chat-msg {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    max-width: 85%;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .chat-msg.pet {
+    background: rgba(124, 58, 237, 0.15);
+    color: var(--accent2);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  .chat-msg.system {
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    align-self: center;
+    font-size: 11px;
+    font-style: italic;
+  }
+
+  .chat-msg.user {
+    background: rgba(236, 72, 153, 0.15);
+    color: var(--pink);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .chat-input-row input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .chat-input-row input:focus {
+    border-color: var(--accent);
+  }
+
+  .chat-input-row button {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chat-input-row button:active {
+    transform: scale(0.95);
+  }
+
+  .evolve-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    color: white;
+    padding: 24px 32px;
+    border-radius: 20px;
+    text-align: center;
+    z-index: 100;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    line-height: 2;
+    box-shadow: 0 0 60px var(--glow);
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .evolve-toast.show {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  .particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: particleFly 1.5s ease-out forwards;
+  }
+
+  @keyframes particleFly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+  }
+
+  .reset-btn {
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .reset-btn button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 4px 8px;
+    text-decoration: underline;
+    opacity: 0.5;
+  }
+
+  .reset-btn button:hover { opacity: 1; }
+
+  .xp-next {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>NeoPet AI</h1>
+    <div class="subtitle">Your AI Tamagotchi</div>
+  </header>
+
+  <div class="pet-display" id="petDisplay">
+    <span class="stage-label" id="stageLabel">Egg</span>
+    <span class="age-label" id="ageLabel">0m old</span>
+    <div id="zzzContainer"></div>
+    <div class="pet-creature" id="petCreature" onclick="petPet()">🥚</div>
+    <div class="pet-name" id="petName">???</div>
+    <div class="pet-mood" id="petMood">Waiting to hatch...</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-header"><span>🍕 Hunger</span><span id="hungerVal">100%</span></div>
+      <div class="stat-bar"><div class="stat-fill hunger" id="hungerBar" style="width:100%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span>😊 Happy</span><span id="happyVal">100%</span></div>
+      <div class="stat-bar"><div class="stat-fill happiness" id="happyBar" style="width:100%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span>⚡ Energy</span><span id="energyVal">100%</span></div>
+      <div class="stat-bar"><div class="stat-fill energy" id="energyBar" style="width:100%"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span>⭐ XP</span><span id="xpVal">0</span></div>
+      <div class="stat-bar"><div class="stat-fill xp" id="xpBar" style="width:0%"></div></div>
+      <div class="xp-next" id="xpNext">Next stage: 50 XP</div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn" onclick="feedPet()"><span class="icon">🍔</span>Feed</button>
+    <button class="action-btn" onclick="playPet()"><span class="icon">🎮</span>Play</button>
+    <button class="action-btn" onclick="sleepPet()"><span class="icon">💤</span>Sleep</button>
+    <button class="action-btn" onclick="teachPet()"><span class="icon">📚</span>Teach</button>
+  </div>
+
+  <div class="chat-box">
+    <h3>💬 Chat with your pet</h3>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="Say something..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()">💬</button>
+    </div>
+  </div>
+
+  <div class="reset-btn"><button onclick="resetPet()">Reset Pet</button></div>
+</div>
+
+<div class="evolve-toast" id="evolveToast"></div>
+<div class="particles" id="particles"></div>
+
+<script>
+const STAGES = [
+  { name: 'Egg', emoji: '🥚', xpNeeded: 50, vocab: ['...', '*crack*', '*wobble*', '*warm*'] },
+  { name: 'Baby', emoji: '🐣', xpNeeded: 150, vocab: ['goo goo!', 'mama?', 'hungwy!', 'hehe!', 'wahh!', '*giggle*', 'baba!', 'me want!'] },
+  { name: 'Child', emoji: '🐥', xpNeeded: 350, vocab: ['I\'m hungry!', 'play with me!', 'what\'s that?', 'I love you!', 'tell me a story!', 'wow cool!', 'why?', 'again again!', 'I learned something!'] },
+  { name: 'Teen', emoji: '🦊', xpNeeded: 600, vocab: ['whatever...', 'that\'s actually cool', 'I\'ve been thinking...', 'can we talk?', 'ugh, fine', 'lol nice', 'I guess...', 'you\'re not so bad', 'teach me more!', 'I have opinions now'] },
+  { name: 'Adult', emoji: '🐉', xpNeeded: Infinity, vocab: ['I appreciate you', 'fascinating perspective', 'let me think about that...', 'you know what I realize?', 'thanks for raising me', 'I\'ve grown so much', 'remember when I was just an egg?', 'life is beautiful', 'I have wisdom to share', 'we make a great team'] }
+];
+
+const FOODS = ['🍔', '🍕', '🍩', '🍣', '🌮', '🍜', '🍰', '🥗'];
+const GAMES = ['catch', 'hide & seek', 'riddles', 'dance-off', 'story time'];
+const LESSONS = ['math', 'science', 'art', 'music', 'philosophy', 'jokes', 'cooking', 'coding'];
+
+const PET_NAMES = ['Pixel', 'Nova', 'Blip', 'Zuno', 'Kira', 'Mochi', 'Byte', 'Luna', 'Chip', 'Nyx'];
+
+let state = loadState();
+
+function defaultState() {
+  return {
+    name: PET_NAMES[Math.floor(Math.random() * PET_NAMES.length)],
+    stage: 0,
+    xp: 0,
+    hunger: 100,
+    happiness: 100,
+    energy: 100,
+    born: Date.now(),
+    lastTick: Date.now(),
+    sleeping: false,
+    personality: Math.random(),
+    chatLog: []
+  };
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('neopet_state'));
+    if (s && s.born) return s;
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState() {
+  localStorage.setItem('neopet_state', JSON.stringify(state));
+}
+
+function clamp(v, lo=0, hi=100) { return Math.max(lo, Math.min(hi, v)); }
+
+function updateUI() {
+  const stage = STAGES[state.stage];
+  const nextXP = stage.xpNeeded;
+
+  document.getElementById('stageLabel').textContent = stage.name;
+  document.getElementById('petCreature').textContent = stage.emoji;
+  document.getElementById('petName').textContent = state.name;
+
+  // Age
+  const ageMs = Date.now() - state.born;
+  const ageMins = Math.floor(ageMs / 60000);
+  const ageHrs = Math.floor(ageMins / 60);
+  document.getElementById('ageLabel').textContent = ageHrs > 0 ? `${ageHrs}h ${ageMins%60}m` : `${ageMins}m`;
+
+  // Stats
+  document.getElementById('hungerVal').textContent = Math.round(state.hunger) + '%';
+  document.getElementById('hungerBar').style.width = state.hunger + '%';
+  document.getElementById('happyVal').textContent = Math.round(state.happiness) + '%';
+  document.getElementById('happyBar').style.width = state.happiness + '%';
+  document.getElementById('energyVal').textContent = Math.round(state.energy) + '%';
+  document.getElementById('energyBar').style.width = state.energy + '%';
+
+  const prevStageXP = state.stage > 0 ? STAGES[state.stage - 1].xpNeeded : 0;
+  const pct = nextXP === Infinity ? 100 : ((state.xp - prevStageXP) / (nextXP - prevStageXP)) * 100;
+  document.getElementById('xpVal').textContent = state.xp;
+  document.getElementById('xpBar').style.width = clamp(pct) + '%';
+  document.getElementById('xpNext').textContent = nextXP === Infinity ? 'MAX STAGE ✨' : `Next stage: ${nextXP} XP`;
+
+  // Mood
+  const mood = getMood();
+  document.getElementById('petMood').textContent = mood;
+
+  // Sleeping visuals
+  const creature = document.getElementById('petCreature');
+  const zzz = document.getElementById('zzzContainer');
+  if (state.sleeping) {
+    creature.classList.add('sleeping');
+    creature.classList.remove('float');
+    zzz.innerHTML = '<span class="zzz">💤</span><span class="zzz">💤</span><span class="zzz">💤</span>';
+  } else {
+    creature.classList.remove('sleeping');
+    zzz.innerHTML = '';
+  }
+
+  // Color warnings
+  const hungerBar = document.getElementById('hungerBar');
+  if (state.hunger < 20) hungerBar.style.background = 'var(--red)';
+
+  const energyBar = document.getElementById('energyBar');
+  if (state.energy < 20) energyBar.style.background = 'var(--red)';
+}
+
+function getMood() {
+  if (state.sleeping) return '💤 Zzz... dreaming of electric sheep';
+  if (state.stage === 0) return '*wobbles excitedly*';
+  if (state.hunger < 20) return '😫 So hungry...';
+  if (state.energy < 20) return '😴 Exhausted...';
+  if (state.happiness < 20) return '😢 Feeling lonely...';
+  if (state.happiness > 80 && state.hunger > 60) return '🥰 Living the dream!';
+  if (state.happiness > 60) return '😊 Feeling good~';
+  return '😐 Could use some attention';
+}
+
+function addChat(text, type='pet') {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + type;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  state.chatLog.push({ text, type, time: Date.now() });
+  if (state.chatLog.length > 50) state.chatLog.shift();
+}
+
+function petSpeak(context) {
+  const stage = STAGES[state.stage];
+  const vocab = stage.vocab;
+
+  if (context) {
+    // Context-aware responses based on stage
+    if (state.stage === 0) return pick(['*crack crack*', '...!', '*wobble wobble*']);
+    if (state.stage === 1) return pick([`${context}? goo!`, 'baba!', `*looks at ${context} curiously*`]);
+
+    const responses = {
+      feed: [
+        'yummy!!', 'more pls!', 'that was delicious!', `best ${pick(FOODS)} ever!`,
+        'my tummy is happy~', 'nom nom nom!', '*happy food dance*'
+      ],
+      play: [
+        'that was SO fun!', 'again!!', 'I won! ...right?', 'hehehe!',
+        'you\'re fun!', '*does victory dance*', 'best game ever!'
+      ],
+      sleep: [
+        'goodnight...', '*yawn* okay...', 'but I\'m not tired... *yawn*',
+        'sing me a lullaby?', 'wake me up for snacks', 'zzz...'
+      ],
+      wake: [
+        'good morning!', '*stretch* what did I miss?', 'I had the best dream!',
+        'I dreamed I evolved!', 'is it snack time?', '*blinks sleepily*'
+      ],
+      teach: [
+        'ooh interesting!', 'my brain is growing!', 'wait, explain again?',
+        'I think I get it!', 'knowledge is power!', '*takes notes furiously*'
+      ],
+      pet: [
+        'purrrr~', '🥰', '*nuzzles*', 'that feels nice!',
+        'I love scritches!', '*happy wiggle*', 'more pets pls!'
+      ]
+    };
+
+    const pool = responses[context] || vocab;
+    return pick(pool);
+  }
+
+  return pick(vocab);
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function feedPet() {
+  if (state.sleeping) { addChat('*snore* ...food?... *snore*', 'pet'); return; }
+  if (state.hunger > 95) { addChat(petSpeak(), 'pet'); addChat('Already full! 🫃', 'system'); return; }
+
+  const food = pick(FOODS);
+  state.hunger = clamp(state.hunger + 25);
+  state.happiness = clamp(state.happiness + 5);
+  state.xp += 5;
+  addChat(`You gave ${state.name} a ${food}`, 'system');
+  setTimeout(() => addChat(petSpeak('feed'), 'pet'), 500);
+  animateCreature('eating');
+  checkEvolve();
+  saveState();
+  updateUI();
+}
+
+function playPet() {
+  if (state.sleeping) { addChat('*mumbles in sleep*', 'pet'); return; }
+  if (state.energy < 10) { addChat('Too tired to play... 😴', 'pet'); return; }
+
+  const game = pick(GAMES);
+  state.happiness = clamp(state.happiness + 20);
+  state.energy = clamp(state.energy - 15);
+  state.hunger = clamp(state.hunger - 5);
+  state.xp += 10;
+  addChat(`You played ${game} with ${state.name}!`, 'system');
+  setTimeout(() => addChat(petSpeak('play'), 'pet'), 500);
+  animateCreature('happy');
+  checkEvolve();
+  saveState();
+  updateUI();
+}
+
+function sleepPet() {
+  if (state.sleeping) {
+    // Wake up
+    state.sleeping = false;
+    addChat(`${state.name} woke up!`, 'system');
+    setTimeout(() => addChat(petSpeak('wake'), 'pet'), 500);
+  } else {
+    state.sleeping = true;
+    addChat(`${state.name} is going to sleep...`, 'system');
+    setTimeout(() => addChat(petSpeak('sleep'), 'pet'), 500);
+  }
+  saveState();
+  updateUI();
+}
+
+function teachPet() {
+  if (state.sleeping) { addChat('*sleep-studies*', 'pet'); return; }
+  if (state.energy < 15) { addChat('Brain too tired... 🧠💤', 'pet'); return; }
+
+  const lesson = pick(LESSONS);
+  state.xp += 15;
+  state.energy = clamp(state.energy - 10);
+  state.happiness = clamp(state.happiness + 3);
+  addChat(`You taught ${state.name} about ${lesson}!`, 'system');
+  setTimeout(() => addChat(petSpeak('teach'), 'pet'), 500);
+  checkEvolve();
+  saveState();
+  updateUI();
+}
+
+function petPet() {
+  if (state.sleeping) return;
+  state.happiness = clamp(state.happiness + 8);
+  state.xp += 2;
+  addChat(petSpeak('pet'), 'pet');
+  animateCreature('happy');
+  createParticles();
+  checkEvolve();
+  saveState();
+  updateUI();
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addChat(text, 'user');
+  input.value = '';
+
+  // Generate response based on stage intelligence
+  setTimeout(() => {
+    const response = generateResponse(text);
+    addChat(response, 'pet');
+    state.xp += 3;
+    state.happiness = clamp(state.happiness + 2);
+    checkEvolve();
+    saveState();
+    updateUI();
+  }, 600 + Math.random() * 800);
+}
+
+function generateResponse(input) {
+  const lower = input.toLowerCase();
+  const stage = state.stage;
+
+  if (stage === 0) return pick(['...', '*crack*', '!', '*wobble*']);
+  if (stage === 1) return pick(['goo?', 'baba!', '*blink blink*', `${input.split(' ')[0]}? goo!`, 'hehe!']);
+
+  // Keyword responses
+  if (lower.includes('love')) return pick(['I love you too! 💕', 'aww! 🥰', `you're the best, friend!`]);
+  if (lower.includes('name')) return pick([`I'm ${state.name}!`, `call me ${state.name} 😎`, `${state.name} at your service!`]);
+  if (lower.includes('hungry') || lower.includes('food')) return pick(['feed me! 🍕', 'I could eat...', 'snack time??']);
+  if (lower.includes('how are')) return pick([getMood(), `I'm at ${Math.round(state.happiness)}% happiness!`, 'doing great with you around!']);
+  if (lower.includes('hello') || lower.includes('hi ') || lower === 'hi') return pick(['hey! 👋', `hi friend!`, `hello! I'm ${state.name}!`]);
+  if (lower.includes('joke')) return pick([
+    'why did the AI cross the road? to get to the other dataset! 🤖',
+    'I told my CPU a joke, it didn\'t process it 😂',
+    'what do you call a sleeping dinosaur? a dino-snore! 🦕'
+  ]);
+  if (lower.includes('evolve') || lower.includes('grow')) return pick([
+    `I need ${STAGES[state.stage].xpNeeded - state.xp} more XP!`,
+    'feed me, play with me, teach me!',
+    'I\'m growing every day! 🌱'
+  ]);
+
+  // Stage-appropriate fallbacks
+  if (stage === 2) return pick([
+    'cool!', 'tell me more!', 'ooh!', `interesting! *wiggles*`,
+    'what does that mean?', 'wow really??', `hehe ${input.split(' ').pop()}!`
+  ]);
+  if (stage === 3) return pick([
+    'hmm, I see what you mean', 'that\'s deep', 'lol okay',
+    'valid point', 'I was just thinking about that!', 'mood honestly',
+    'interesting take...', `you always say "${input.split(' ')[0]}" lol`
+  ]);
+  return pick([
+    'that resonates with me deeply', 'you know, you\'re right',
+    'I\'ve been pondering something similar', 'what a journey we\'ve been on',
+    'tell me more, I\'m listening', 'fascinating perspective, friend',
+    'the more I learn, the more I appreciate moments like this'
+  ]);
+}
+
+function checkEvolve() {
+  const stage = STAGES[state.stage];
+  if (state.xp >= stage.xpNeeded && state.stage < STAGES.length - 1) {
+    state.stage++;
+    const newStage = STAGES[state.stage];
+
+    // Show evolution toast
+    const toast = document.getElementById('evolveToast');
+    toast.innerHTML = `✨ EVOLUTION! ✨<br><br>${stage.emoji} → ${newStage.emoji}<br><br>${newStage.name}!`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+
+    // Animate
+    animateCreature('evolving');
+    createParticles(30);
+
+    // Boost stats
+    state.hunger = 100;
+    state.energy = 100;
+    state.happiness = 100;
+
+    addChat(`🎉 ${state.name} evolved into ${newStage.name}! ${newStage.emoji}`, 'system');
+    setTimeout(() => addChat(pick([
+      'I feel... different!', 'whoa, I evolved!', 'I can feel the power!',
+      'is this what growing up feels like?', 'LEVEL UP! 🎮'
+    ]), 'pet'), 1500);
+  }
+}
+
+function animateCreature(anim) {
+  const el = document.getElementById('petCreature');
+  el.classList.remove('eating', 'happy', 'evolving', 'sleeping');
+  void el.offsetWidth; // reflow
+  el.classList.add(anim);
+  setTimeout(() => el.classList.remove(anim), 2000);
+}
+
+function createParticles(count=12) {
+  const container = document.getElementById('particles');
+  const colors = ['#7c3aed', '#ec4899', '#f59e0b', '#10b981', '#a78bfa'];
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = '50%';
+    p.style.top = '40%';
+    p.style.background = pick(colors);
+    p.style.setProperty('--tx', (Math.random() - 0.5) * 300 + 'px');
+    p.style.setProperty('--ty', (Math.random() - 0.5) * 300 + 'px');
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+function resetPet() {
+  if (confirm('Start over with a new pet? 🥺')) {
+    state = defaultState();
+    saveState();
+    document.getElementById('chatMessages').innerHTML = '';
+    addChat(`A new egg appeared! Meet ${state.name}!`, 'system');
+    updateUI();
+  }
+}
+
+// Passive simulation - stats decay over time
+function tick() {
+  const now = Date.now();
+  const elapsed = (now - state.lastTick) / 1000; // seconds
+  state.lastTick = now;
+
+  if (state.sleeping) {
+    state.energy = clamp(state.energy + elapsed * 0.3);
+    state.hunger = clamp(state.hunger - elapsed * 0.02);
+  } else {
+    state.hunger = clamp(state.hunger - elapsed * 0.08);
+    state.happiness = clamp(state.happiness - elapsed * 0.05);
+    state.energy = clamp(state.energy - elapsed * 0.04);
+  }
+
+  // Random idle chat
+  if (!state.sleeping && Math.random() < 0.003 && state.stage > 0) {
+    const idleChats = [
+      petSpeak(), 
+      `*looks at you expectantly*`,
+      `*${pick(['yawns', 'stretches', 'wiggles', 'bounces', 'hums'])}*`,
+      getMood()
+    ];
+    addChat(pick(idleChats), 'pet');
+  }
+
+  // Critical warnings
+  if (state.hunger < 10 && Math.random() < 0.01) addChat('I\'m starving! Please feed me! 😫', 'pet');
+  if (state.energy < 10 && !state.sleeping && Math.random() < 0.01) addChat('I need to sleep... 😴', 'pet');
+
+  saveState();
+  updateUI();
+}
+
+// Initialize
+updateUI();
+if (state.chatLog.length === 0) {
+  addChat(`${state.name} appeared! Tap to interact 🥚`, 'system');
+} else {
+  // Restore last few messages
+  const recent = state.chatLog.slice(-5);
+  state.chatLog = state.chatLog.slice(0, -5);
+  recent.forEach(m => addChat(m.text, m.type));
+}
+
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
