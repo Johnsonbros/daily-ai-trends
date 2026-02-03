@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Daily AI Trends - Built by ZEKE</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0a0a0a; color: #e0e0e0;
+    min-height: 100vh; padding: 20px;
+  }
+  .header {
+    text-align: center; padding: 40px 20px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 16px; margin-bottom: 30px;
+    border: 1px solid #2a2a4a;
+  }
+  .header h1 { font-size: 2em; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header .sub { color: #666; font-size: 0.85em; margin-top: 8px; }
+  .apps-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px; max-width: 1200px; margin: 0 auto;
+  }
+  .app-card {
+    background: #141414; border: 1px solid #2a2a2a; border-radius: 12px;
+    padding: 24px; transition: all 0.2s;
+    text-decoration: none; color: inherit; display: block;
+  }
+  .app-card:hover { border-color: #4a9eff; transform: translateY(-2px); }
+  .app-card .date { color: #4a9eff; font-size: 0.85em; font-weight: 600; }
+  .app-card h3 { margin: 8px 0; font-size: 1.2em; }
+  .app-card .trend { color: #888; font-size: 0.9em; margin-bottom: 12px; }
+  .app-card .tag {
+    display: inline-block; background: #1a2a3a; color: #4a9eff;
+    padding: 4px 10px; border-radius: 20px; font-size: 0.8em;
+  }
+  .empty { text-align: center; color: #555; padding: 60px; font-size: 1.2em; }
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.5em; }
+    .apps-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🤖 Daily AI Trends</h1>
+    <p>Every day, ZEKE finds a viral AI trend and builds a working app from it.</p>
+    <div class="sub">Auto-built &amp; deployed by <a href="https://github.com/Johnsonbros/daily-ai-trends" style="color:#4a9eff">ZEKE</a></div>
+  </div>
+  <div class="apps-grid" id="apps">
+    <div class="empty">🚀 First app drops tomorrow at 8 AM ET. Stay tuned.</div>
+  </div>
+  <script>
+    // Auto-populated by build script - each app adds itself to apps.json
+    fetch('apps.json').then(r => r.json()).then(apps => {
+      if (!apps.length) return;
+      const grid = document.getElementById('apps');
+      grid.innerHTML = '';
+      apps.sort((a, b) => b.date.localeCompare(a.date));
+      apps.forEach(app => {
+        const card = document.createElement('a');
+        card.className = 'app-card';
+        card.href = app.path;
+        card.innerHTML = `
+          <div class="date">${app.date}</div>
+          <h3>${app.name}</h3>
+          <div class="trend">${app.trend}</div>
+          <span class="tag">${app.tag || 'AI'}</span>
+        `;
+        grid.appendChild(card);
+      });
+    }).catch(() => {});
+  </script>
+</body>
+</html>
