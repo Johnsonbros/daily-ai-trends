@@ -1,5 +1,6 @@
 [
   {"date": "2026-02-03", "name": "MoltSim", "trend": "Moltbook — a viral social network exclusively for AI agents where humans can only observe — hit 1.5M agents and drew Skynet comparisons", "tag": "Social/AI Agents", "path": "2026-02-03/index.html"},
   {"date": "2026-02-03", "name": "NeoPet AI", "trend": "AI-powered companion toys going viral in China — Tamagotchi-like pets that evolve, chat, and simulate emotions", "tag": "AI Companions", "path": "2026-02-03-v2/index.html"},
-  {"date": "2026-02-04", "name": "PromptWorm", "trend": "AI prompt worms — self-replicating instructions spreading through agent networks — become the #1 AI security concern after Moltbook exposes vulnerabilities", "tag": "AI Security", "path": "2026-02-04/index.html"}
+  {"date": "2026-02-04", "name": "PromptWorm", "trend": "AI prompt worms — self-replicating instructions spreading through agent networks — become the #1 AI security concern after Moltbook exposes vulnerabilities", "tag": "AI Security", "path": "2026-02-04/index.html"},
+  {"date": "2026-02-05", "name": "ToonifyMe", "trend": "ChatGPT AI caricature trend goes viral — users turn selfies into cartoon-style avatars using AI image generation prompts", "tag": "Image/Fun", "path": "2026-02-05/index.html"}
 ]

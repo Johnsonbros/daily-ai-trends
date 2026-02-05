@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToonifyMe — AI Caricature Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --accent: #ff6b35;
+      --accent-glow: #ff6b3540;
+      --text: #f0f0f5;
+      --text-muted: #8888aa;
+      --border: #2a2a3a;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      background: linear-gradient(135deg, #ff6b35, #ff9a56, #ffcd56);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+    
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    
+    .trend-badge {
+      display: inline-block;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 0.75rem;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    
+    .upload-zone.has-image {
+      padding: 0;
+      border: none;
+    }
+    
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .upload-text {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    
+    #fileInput {
+      display: none;
+    }
+    
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: #000;
+    }
+    
+    #mainCanvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .style-section h3 {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    
+    .style-btn {
+      background: var(--bg-dark);
+      border: 2px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.75rem 0.25rem;
+      color: var(--text);
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    
+    .style-btn:hover {
+      border-color: var(--accent);
+    }
+    
+    .style-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    
+    .style-btn .icon {
+      font-size: 1.5rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    
+    .slider-group {
+      margin-top: 1rem;
+    }
+    
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .slider-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-width: 70px;
+    }
+    
+    .slider-row input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+    }
+    
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    .slider-value {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-width: 35px;
+      text-align: right;
+    }
+    
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #ff9a56);
+      color: #000;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+    
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    
+    .webcam-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-top: 0.75rem;
+      transition: all 0.2s;
+    }
+    
+    .webcam-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    
+    #webcamVideo {
+      display: none;
+      width: 100%;
+      border-radius: 0.75rem;
+    }
+    
+    .effect-preview {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .preview-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 0.5rem;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+    
+    .preview-thumb:hover,
+    .preview-thumb.active {
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+    
+    .preview-thumb canvas {
+      width: 100%;
+      height: 100%;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .processing {
+      animation: pulse 1s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎨 ToonifyMe</h1>
+      <p class="subtitle">Turn yourself into a viral AI caricature</p>
+      <span class="trend-badge">🔥 #1 AI Trend of 2026</span>
+    </header>
+    
+    <div class="card">
+      <div class="upload-zone" id="uploadZone">
+        <div id="uploadPrompt">
+          <div class="upload-icon">📷</div>
+          <p class="upload-text">Tap to upload a photo</p>
+          <button class="webcam-btn" id="webcamBtn">📹 Use Webcam</button>
+        </div>
+        <div class="canvas-wrapper" id="canvasWrapper" style="display: none;">
+          <canvas id="mainCanvas"></canvas>
+        </div>
+        <video id="webcamVideo" autoplay playsinline></video>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+    
+    <div class="card style-section" id="styleSection" style="display: none;">
+      <h3>Pick Your Style</h3>
+      <div class="style-grid">
+        <button class="style-btn active" data-style="cartoon">
+          <span class="icon">🎭</span>
+          Cartoon
+        </button>
+        <button class="style-btn" data-style="anime">
+          <span class="icon">⛩️</span>
+          Anime
+        </button>
+        <button class="style-btn" data-style="pixar">
+          <span class="icon">🎬</span>
+          Pixar
+        </button>
+        <button class="style-btn" data-style="retro">
+          <span class="icon">📺</span>
+          Retro
+        </button>
+        <button class="style-btn" data-style="neon">
+          <span class="icon">💜</span>
+          Neon
+        </button>
+        <button class="style-btn" data-style="sketch">
+          <span class="icon">✏️</span>
+          Sketch
+        </button>
+        <button class="style-btn" data-style="pop">
+          <span class="icon">🎨</span>
+          Pop Art
+        </button>
+        <button class="style-btn" data-style="oil">
+          <span class="icon">🖼️</span>
+          Oil Paint
+        </button>
+      </div>
+      
+      <div class="slider-group">
+        <div class="slider-row">
+          <span class="slider-label">Intensity</span>
+          <input type="range" id="intensitySlider" min="0" max="100" value="70">
+          <span class="slider-value" id="intensityValue">70%</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">Smoothing</span>
+          <input type="range" id="smoothSlider" min="0" max="100" value="50">
+          <span class="slider-value" id="smoothValue">50%</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">Edge Pop</span>
+          <input type="range" id="edgeSlider" min="0" max="100" value="60">
+          <span class="slider-value" id="edgeValue">60%</span>
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="resetBtn">↩️ Reset</button>
+        <button class="btn btn-primary" id="downloadBtn">💾 Save</button>
+      </div>
+    </div>
+    
+    <footer>
+      <p>Inspired by the viral ChatGPT caricature trend</p>
+      <p style="margin-top: 0.5rem;">Built by <a href="https://github.com/Johnsonbros/daily-ai-trends">Daily AI Trends</a></p>
+    </footer>
+  </div>
+  
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const fileInput = document.getElementById('fileInput');
+    const mainCanvas = document.getElementById('mainCanvas');
+    const ctx = mainCanvas.getContext('2d');
+    const styleSection = document.getElementById('styleSection');
+    const styleBtns = document.querySelectorAll('.style-btn');
+    const intensitySlider = document.getElementById('intensitySlider');
+    const smoothSlider = document.getElementById('smoothSlider');
+    const edgeSlider = document.getElementById('edgeSlider');
+    const webcamBtn = document.getElementById('webcamBtn');
+    const webcamVideo = document.getElementById('webcamVideo');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    let originalImage = null;
+    let currentStyle = 'cartoon';
+    let isWebcamActive = false;
+    
+    // Style definitions with filter effects
+    const styles = {
+      cartoon: {
+        saturation: 1.4,
+        contrast: 1.3,
+        brightness: 1.1,
+        hue: 0,
+        posterize: 8,
+        edgeStrength: 1.2
+      },
+      anime: {
+        saturation: 1.6,
+        contrast: 1.4,
+        brightness: 1.15,
+        hue: -10,
+        posterize: 6,
+        edgeStrength: 1.5
+      },
+      pixar: {
+        saturation: 1.2,
+        contrast: 1.15,
+        brightness: 1.2,
+        hue: 5,
+        posterize: 12,
+        edgeStrength: 0.8
+      },
+      retro: {
+        saturation: 0.7,
+        contrast: 1.5,
+        brightness: 1.0,
+        hue: 20,
+        posterize: 5,
+        edgeStrength: 1.0,
+        sepia: 0.4
+      },
+      neon: {
+        saturation: 2.0,
+        contrast: 1.6,
+        brightness: 1.1,
+        hue: 180,
+        posterize: 4,
+        edgeStrength: 2.0
+      },
+      sketch: {
+        saturation: 0,
+        contrast: 1.8,
+        brightness: 1.2,
+        hue: 0,
+        posterize: 3,
+        edgeStrength: 2.5,
+        invert: true
+      },
+      pop: {
+        saturation: 2.5,
+        contrast: 1.7,
+        brightness: 1.15,
+        hue: 30,
+        posterize: 4,
+        edgeStrength: 1.8
+      },
+      oil: {
+        saturation: 1.3,
+        contrast: 1.2,
+        brightness: 1.05,
+        hue: 0,
+        posterize: 16,
+        edgeStrength: 0.5,
+        blur: 2
+      }
+    };
+    
+    uploadZone.addEventListener('click', (e) => {
+      if (e.target === webcamBtn) return;
+      if (!canvasWrapper.style.display || canvasWrapper.style.display === 'none') {
+        fileInput.click();
+      }
+    });
+    
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    webcamBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'user', width: 512, height: 512 } 
+        });
+        webcamVideo.srcObject = stream;
+        webcamVideo.style.display = 'block';
+        uploadPrompt.style.display = 'none';
+        isWebcamActive = true;
+        
+        // Add capture button
+        const captureBtn = document.createElement('button');
+        captureBtn.className = 'btn btn-primary';
+        captureBtn.textContent = '📸 Capture';
+        captureBtn.style.marginTop = '1rem';
+        captureBtn.onclick = captureWebcam;
+        uploadZone.appendChild(captureBtn);
+      } catch (err) {
+        alert('Could not access webcam');
+      }
+    });
+    
+    function captureWebcam() {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = webcamVideo.videoWidth;
+      tempCanvas.height = webcamVideo.videoHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(webcamVideo, 0, 0);
+      
+      // Stop webcam
+      webcamVideo.srcObject.getTracks().forEach(t => t.stop());
+      webcamVideo.style.display = 'none';
+      isWebcamActive = false;
+      
+      // Remove capture button
+      const captureBtn = uploadZone.querySelector('.btn-primary');
+      if (captureBtn) captureBtn.remove();
+      
+      // Load as image
+      const img = new Image();
+      img.onload = () => processImage(img);
+      img.src = tempCanvas.toDataURL();
+    }
+    
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => processImage(img);
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function processImage(img) {
+      // Store original
+      originalImage = img;
+      
+      // Setup canvas
+      const size = Math.min(512, Math.max(img.width, img.height));
+      mainCanvas.width = size;
+      mainCanvas.height = size;
+      
+      // Center crop
+      const scale = size / Math.min(img.width, img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = (size - w) / 2;
+      const y = (size - h) / 2;
+      
+      ctx.drawImage(img, x, y, w, h);
+      
+      // Show canvas
+      uploadPrompt.style.display = 'none';
+      canvasWrapper.style.display = 'block';
+      uploadZone.classList.add('has-image');
+      styleSection.style.display = 'block';
+      
+      // Apply initial style
+      applyStyle();
+    }
+    
+    function applyStyle() {
+      if (!originalImage) return;
+      
+      const style = styles[currentStyle];
+      const intensity = intensitySlider.value / 100;
+      const smooth = smoothSlider.value / 100;
+      const edge = edgeSlider.value / 100;
+      
+      // Redraw original
+      const size = mainCanvas.width;
+      const scale = size / Math.min(originalImage.width, originalImage.height);
+      const w = originalImage.width * scale;
+      const h = originalImage.height * scale;
+      const x = (size - w) / 2;
+      const y = (size - h) / 2;
+      
+      ctx.filter = 'none';
+      ctx.drawImage(originalImage, x, y, w, h);
+      
+      // Get image data for processing
+      let imageData = ctx.getImageData(0, 0, size, size);
+      let data = imageData.data;
+      
+      // Apply posterization
+      const levels = Math.max(2, Math.round(style.posterize * (1 - intensity * 0.5)));
+      const step = 255 / levels;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        // Posterize
+        data[i] = Math.round(data[i] / step) * step;
+        data[i + 1] = Math.round(data[i + 1] / step) * step;
+        data[i + 2] = Math.round(data[i + 2] / step) * step;
+        
+        // Saturation adjustment
+        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        const sat = style.saturation * intensity + (1 - intensity);
+        data[i] = gray + sat * (data[i] - gray);
+        data[i + 1] = gray + sat * (data[i + 1] - gray);
+        data[i + 2] = gray + sat * (data[i + 2] - gray);
+        
+        // Contrast
+        const contrast = style.contrast * intensity + (1 - intensity);
+        data[i] = ((data[i] - 128) * contrast) + 128;
+        data[i + 1] = ((data[i + 1] - 128) * contrast) + 128;
+        data[i + 2] = ((data[i + 2] - 128) * contrast) + 128;
+        
+        // Brightness
+        const brightness = style.brightness * intensity + (1 - intensity);
+        data[i] *= brightness;
+        data[i + 1] *= brightness;
+        data[i + 2] *= brightness;
+        
+        // Sepia effect
+        if (style.sepia) {
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189) * style.sepia + r * (1 - style.sepia);
+          data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168) * style.sepia + g * (1 - style.sepia);
+          data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131) * style.sepia + b * (1 - style.sepia);
+        }
+        
+        // Clamp
+        data[i] = Math.max(0, Math.min(255, data[i]));
+        data[i + 1] = Math.max(0, Math.min(255, data[i + 1]));
+        data[i + 2] = Math.max(0, Math.min(255, data[i + 2]));
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      
+      // Apply smoothing (blur)
+      if (smooth > 0 || style.blur) {
+        const blurAmount = (smooth * 3) + (style.blur || 0);
+        ctx.filter = `blur(${blurAmount}px)`;
+        ctx.drawImage(mainCanvas, 0, 0);
+        ctx.filter = 'none';
+      }
+      
+      // Edge detection overlay
+      if (edge > 0.1) {
+        const edgeCanvas = document.createElement('canvas');
+        edgeCanvas.width = size;
+        edgeCanvas.height = size;
+        const edgeCtx = edgeCanvas.getContext('2d');
+        
+        edgeCtx.drawImage(mainCanvas, 0, 0);
+        const edgeData = edgeCtx.getImageData(0, 0, size, size);
+        const ed = edgeData.data;
+        
+        // Simple edge detection
+        const strength = edge * style.edgeStrength * 2;
+        for (let y = 1; y < size - 1; y++) {
+          for (let x = 1; x < size - 1; x++) {
+            const i = (y * size + x) * 4;
+            const il = (y * size + x - 1) * 4;
+            const ir = (y * size + x + 1) * 4;
+            const it = ((y - 1) * size + x) * 4;
+            const ib = ((y + 1) * size + x) * 4;
+            
+            const gx = -ed[il] + ed[ir];
+            const gy = -ed[it] + ed[ib];
+            const g = Math.sqrt(gx * gx + gy * gy) * strength;
+            
+            // Dark edge lines
+            if (g > 30) {
+              ed[i] = ed[i + 1] = ed[i + 2] = Math.max(0, ed[i] - g);
+            }
+          }
+        }
+        
+        edgeCtx.putImageData(edgeData, 0, 0);
+        ctx.globalAlpha = 0.7;
+        ctx.drawImage(edgeCanvas, 0, 0);
+        ctx.globalAlpha = 1;
+      }
+      
+      // Invert for sketch style
+      if (style.invert && intensity > 0.5) {
+        imageData = ctx.getImageData(0, 0, size, size);
+        data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 255 - data[i];
+          data[i + 1] = 255 - data[i + 1];
+          data[i + 2] = 255 - data[i + 2];
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+    }
+    
+    // Style button handlers
+    styleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        styleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentStyle = btn.dataset.style;
+        applyStyle();
+      });
+    });
+    
+    // Slider handlers
+    [intensitySlider, smoothSlider, edgeSlider].forEach((slider, idx) => {
+      const labels = ['intensityValue', 'smoothValue', 'edgeValue'];
+      slider.addEventListener('input', () => {
+        document.getElementById(labels[idx]).textContent = slider.value + '%';
+        applyStyle();
+      });
+    });
+    
+    // Download button
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = `toonify-${currentStyle}-${Date.now()}.png`;
+      link.href = mainCanvas.toDataURL('image/png');
+      link.click();
+    });
+    
+    // Reset button
+    resetBtn.addEventListener('click', () => {
+      if (originalImage) {
+        intensitySlider.value = 70;
+        smoothSlider.value = 50;
+        edgeSlider.value = 60;
+        document.getElementById('intensityValue').textContent = '70%';
+        document.getElementById('smoothValue').textContent = '50%';
+        document.getElementById('edgeValue').textContent = '60%';
+        styleBtns.forEach(b => b.classList.remove('active'));
+        styleBtns[0].classList.add('active');
+        currentStyle = 'cartoon';
+        applyStyle();
+      }
+    });
+  </script>
+</body>
+</html>
