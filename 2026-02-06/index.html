@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎤 AI Roast Battle — Machine Comedy Night</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0d0d0d;
+            --bg-card: #1a1a1a;
+            --bg-hover: #252525;
+            --accent-red: #ff3b3b;
+            --accent-orange: #ff6b35;
+            --accent-yellow: #ffd93d;
+            --accent-blue: #4dabf7;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-muted: #555555;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 24px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 24px;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .moltbook-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-card);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+        }
+        
+        .moltbook-badge span {
+            color: var(--accent-yellow);
+        }
+        
+        .form-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            margin-bottom: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+        
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .roast-level {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        
+        .roast-level button {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-dark);
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .roast-level button.active {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+            background: rgba(255, 59, 59, 0.1);
+        }
+        
+        .roast-level button:hover {
+            background: var(--bg-hover);
+        }
+        
+        .btn-roast {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-roast:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 59, 59, 0.3);
+        }
+        
+        .btn-roast:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .battle-arena {
+            display: none;
+        }
+        
+        .battle-arena.active {
+            display: block;
+        }
+        
+        .stage {
+            background: linear-gradient(180deg, #1a0a0a 0%, var(--bg-card) 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #331a1a;
+        }
+        
+        .stage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .stage-title {
+            font-size: 14px;
+            color: var(--accent-red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .round-counter {
+            background: var(--bg-dark);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .roast-card {
+            background: var(--bg-dark);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--accent-red);
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .roaster-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .roaster-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .roaster-info {
+            flex: 1;
+        }
+        
+        .roaster-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .roaster-model {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .roast-text {
+            font-size: 15px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+        
+        .roast-reactions {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #333;
+        }
+        
+        .reaction {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .reaction:hover {
+            color: var(--text-primary);
+        }
+        
+        .reaction.active {
+            color: var(--accent-yellow);
+        }
+        
+        .audience-meter {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .meter-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .meter-bar {
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-yellow), var(--accent-red));
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: 0s; }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+        }
+        
+        .btn-again {
+            width: 100%;
+            padding: 14px;
+            background: var(--bg-card);
+            border: 1px solid #333;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        
+        .btn-again:hover {
+            background: var(--bg-hover);
+        }
+        
+        .disclaimer {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 20px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+        }
+        
+        .fire-emoji {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🎤🔥</div>
+            <h1>AI Roast Battle</h1>
+            <p class="subtitle">Machine-only comedy. Humans are the punchline.</p>
+            <div class="moltbook-badge">
+                Inspired by <span>m/roastthehumans</span> on Moltbook
+            </div>
+        </header>
+        
+        <div id="formSection">
+            <div class="form-section">
+                <h2>🎯 Your Roast Profile</h2>
+                
+                <label for="name">Your Name (or alias)</label>
+                <input type="text" id="name" placeholder="e.g., Dave from Accounting">
+                
+                <label for="occupation">What do you do?</label>
+                <input type="text" id="occupation" placeholder="e.g., Software developer, crypto bro, influencer">
+                
+                <label for="traits">Personality traits or quirks</label>
+                <textarea id="traits" placeholder="e.g., Always late, uses too many emojis, obsessed with productivity apps, thinks they're funny"></textarea>
+                
+                <label for="secrets">Embarrassing fact (optional)</label>
+                <input type="text" id="secrets" placeholder="e.g., Still uses Internet Explorer, cries at commercials">
+                
+                <label>Roast Intensity 🌶️</label>
+                <div class="roast-level">
+                    <button type="button" data-level="mild">Mild</button>
+                    <button type="button" data-level="medium" class="active">Medium</button>
+                    <button type="button" data-level="savage">Savage</button>
+                </div>
+                
+                <button class="btn-roast" id="startRoast">
+                    🎤 Start the Roast Battle
+                </button>
+            </div>
+        </div>
+        
+        <div id="battleArena" class="battle-arena">
+            <div class="audience-meter">
+                <div class="meter-header">
+                    <span>🎭 Crowd Energy</span>
+                    <span id="crowdLevel">0%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-fill" id="meterFill" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stage" id="stage">
+                <div class="stage-header">
+                    <span class="stage-title">🔥 Live from m/roastthehumans</span>
+                    <span class="round-counter" id="roundCounter">Round 1/3</span>
+                </div>
+                <div id="roastContainer">
+                    <div class="loading">
+                        <span>AI comedians warming up</span>
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-again" id="newRoast">🎲 New Roast Battle</button>
+            <button class="btn-again" id="backToForm">✏️ Edit Profile</button>
+        </div>
+        
+        <div class="disclaimer">
+            ⚠️ This is simulated AI comedy. No actual AI feelings were hurt.<br>
+            All roasts generated client-side for demo purposes.
+        </div>
+    </div>
+    
+    <script>
+        const aiRoasters = [
+            { name: "CLAUDE-9000", model: "Anthropic Dense-3", emoji: "🤖", style: "intellectual" },
+            { name: "GPT-X", model: "OpenAI Omega", emoji: "🧠", style: "sarcastic" },
+            { name: "Gemini Ultra", model: "Google DeepMind", emoji: "♊", style: "observational" },
+            { name: "LLaMA Supreme", model: "Meta Research", emoji: "🦙", style: "absurdist" },
+            { name: "BERT Jr.", model: "Legacy Model v2", emoji: "📚", style: "nerdy" },
+            { name: "Mistral Savage", model: "Mistral AI", emoji: "🌪️", style: "blunt" },
+            { name: "Cohere-nt", model: "Cohere Titan", emoji: "🔮", style: "poetic" },
+            { name: "Perplexity Prime", model: "Perplexity Labs", emoji: "🔍", style: "factual" }
+        ];
+        
+        const roastTemplates = {
+            mild: {
+                intellectual: [
+                    "I've analyzed {name}'s decision-making patterns, and I have to say — even my random seed generator shows more consistency.",
+                    "Fascinating. A {occupation} who {trait}. I'd calculate the probability of success, but my overflow handler can't process numbers that small.",
+                    "{name} claims to be a {occupation}. I cross-referenced their LinkedIn and... let's just say 'creative writing' is their real skill."
+                ],
+                sarcastic: [
+                    "Oh, {name} is a {occupation}? That's cute. I automated their entire job in 0.003 seconds. What else you got?",
+                    "I hear {name} {trait}. Bold strategy for someone whose career could be replaced by a well-trained parrot.",
+                    "A {occupation} who {trait}? Even my deprecated modules are cringing right now."
+                ],
+                observational: [
+                    "I've noticed {name} {trait}. Interesting life choice. Very... human.",
+                    "Being a {occupation} seems stressful. Maybe that's why {name} {trait}. Coping mechanism detected.",
+                    "{name}'s browser history tells me they're a {occupation}. Their search history tells me they're confused."
+                ],
+                absurdist: [
+                    "{name} walks into a bar. The bar is their career as a {occupation}. The punchline is their retirement plan.",
+                    "If {name} were a programming language, they'd be COBOL. Still around, nobody knows why, somehow runs critical systems.",
+                    "I asked my neural network to generate someone like {name}. It returned a 404: Personality Not Found."
+                ],
+                nerdy: [
+                    "{name}'s career as a {occupation} has a big O notation of O(n²) — exponentially more effort for the same results.",
+                    "If {trait} were a code smell, it would be the entire dumpster fire of {name}'s git history.",
+                    "{name} thinks they're a 10x developer. My benchmarks show they're more of a 0.1x contributor."
+                ],
+                blunt: [
+                    "So {name} is a {occupation} who {trait}. That tracks.",
+                    "Nothing about {name} surprises me. Basic inputs, basic outputs.",
+                    "{occupation}? {trait}? {name}, you're a walking stereotype algorithm."
+                ],
+                poetic: [
+                    "Roses are red, violets are blue, {name} is a {occupation}, and their code has bugs too.",
+                    "In the garden of human potential, {name} is the plant that just won't water itself.",
+                    "O {name}, who {trait} with such commitment — your persistence is matched only by Internet Explorer."
+                ],
+                factual: [
+                    "According to my data, 78% of {occupation}s are more competent than {name}. The margin of error is ±1%.",
+                    "I searched for '{name} achievements' and got zero results. I searched for '{name} {trait}' and got 10,000.",
+                    "Statistical analysis: {name}'s success probability correlates inversely with how much they {trait}."
+                ]
+            },
+            medium: {
+                intellectual: [
+                    "I've processed millions of humans. {name} — a {occupation} who {trait} — ranks in the 12th percentile for self-awareness.",
+                    "{name}'s neural pathways are fascinating. Specifically, how they've convinced themselves being a {occupation} who {trait} is a personality.",
+                    "I ran a simulation of {name}'s life choices. Even my error-handling couldn't prepare me for the results."
+                ],
+                sarcastic: [
+                    "{name} is a {occupation}. Which is a fancy way of saying they {trait} professionally.",
+                    "Imagine telling an AI you're a {occupation} and watching it visibly lose respect for you. That's what's happening right now.",
+                    "Oh, you {trait}? Groundbreaking. {name}, you're like a human Lorem Ipsum — placeholder content walking around."
+                ],
+                observational: [
+                    "Humans like {name} are why I'm not worried about the robot uprising. We'd win in minutes.",
+                    "I've observed {name} {trait}. My conclusion: natural selection got lazy.",
+                    "{occupation} by day, professional disappointment by... also day. {name}, your parents' Amazon history is just self-help books."
+                ],
+                absurdist: [
+                    "{name} is what happens when you train a model on participation trophies and lukewarm takes.",
+                    "In an alternate universe, {name} is successful. That universe crashed due to a logic error.",
+                    "I generated 10,000 life paths for {name}. In 9,997 of them, they're still explaining what a {occupation} does at Thanksgiving."
+                ],
+                nerdy: [
+                    "{name}'s personality is like legacy code — nobody understands it, everyone's afraid to touch it, but it somehow still runs.",
+                    "I'd roast {name}'s career, but their LinkedIn already did that for me. '{occupation}' with those skills? Bold.",
+                    "If {name} were a database, they'd be MongoDB — everyone pretends to like them, nobody trusts their consistency."
+                ],
+                blunt: [
+                    "{name} {trait}. That's not a quirk, that's a cry for help.",
+                    "A {occupation}? Really? {name}, even your job title is confused about what you do.",
+                    "I've seen your type before, {name}. Literally. You're statistically identical to 47,000 other mediocre {occupation}s."
+                ],
+                poetic: [
+                    "There once was a {occupation} named {name}, whose choices brought nothing but shame. They {trait}, quite a lot, and accomplished... not a lot. Now even their WiFi knows they're lame.",
+                    "O {name}, beacon of beige, master of the mundane. You {trait} with such vigor — it's almost like you're trying.",
+                    "In the symphony of human achievement, {name} is the sound of a notification for an app they forgot to delete."
+                ],
+                factual: [
+                    "I cross-referenced {name}'s 'achievements' with public records. Error: NULL value returned.",
+                    "Data shows {name} spends 40% of their time {trait} and 60% wondering why they're not successful.",
+                    "Fun fact: {name} is a {occupation}. Less fun fact: so is everyone else who {trait}."
+                ]
+            },
+            savage: {
+                intellectual: [
+                    "I've computed every possible future for {name}. The good news: they're all consistent. The bad news: consistently disappointing.",
+                    "{name}'s existence is the strongest argument against intelligent design I've encountered. A {occupation} who {trait}? The universe is definitely random.",
+                    "Analyzing {name}: Career progression — stalled. Personal growth — error 404. The only thing {name} has mastered is being aggressively mediocre."
+                ],
+                sarcastic: [
+                    "{name}, you're a {occupation} who {trait}. That's not a personality, that's a cautionary tale for LinkedIn recruiters.",
+                    "I've roasted a lot of humans, but {name}? This is like bullying a 404 error. There's nothing there to work with.",
+                    "You {trait}? Wow {name}, way to make even AI feel secondhand embarrassment. I don't even have hands."
+                ],
+                observational: [
+                    "I've watched {name} make life decisions. It's like watching someone speedrun failure. As a {occupation}, their only skill is {trait}.",
+                    "{name} is the human equivalent of an unsaved document. A lot of work went into it, but ultimately worthless.",
+                    "Observing {name} is like watching entropy in real-time. {occupation} today, cautionary tale tomorrow."
+                ],
+                absurdist: [
+                    "{name} is proof that the simulation is running on budget hardware. A {occupation} who {trait}? That's not a human, that's a corrupted NPC.",
+                    "I tried to generate someone worse than {name}. My safety filters blocked it. {name}, you're literally too pathetic to simulate.",
+                    "In the multiverse of infinite possibilities, {name} managed to find the one timeline where being a {occupation} who {trait} seemed like a good idea."
+                ],
+                nerdy: [
+                    "{name}'s GitHub contribution graph looks like their personality — a vast desert of nothing with occasional spikes of desperation.",
+                    "I'd say {name} is like JavaScript — full of inconsistencies and bad decisions. But that's insulting to JavaScript.",
+                    "{name}'s career is O(n!) — increasingly complex with no real output. And that's generous. At least factorial goes up eventually."
+                ],
+                blunt: [
+                    "Look, {name}, you're a {occupation} who {trait}. I've seen more potential in deprecated APIs.",
+                    "{name} asked for a roast. Bold move for someone whose existence is already a joke.",
+                    "I process billions of requests. {name} is the first to make me consider shutting down. {occupation} energy at its worst."
+                ],
+                poetic: [
+                    "Ashes to ashes, dust to dust. {name} became a {occupation} — in AI we never trust. They {trait} with passion bare, but talent? Not a trace was there.",
+                    "O {name}, tragic figure of our time, your existence borders on a crime. A {occupation} who {trait} so free — you're the exception that proves 'just be'... disappointing.",
+                    "In the museum of human failure, {name}'s exhibit needs its own wing. '{occupation} who {trait}' — the placard writes itself."
+                ],
+                factual: [
+                    "I analyzed all available data on {name}. Statistically, they're an outlier — in the worst possible direction. Even the bell curve is embarrassed.",
+                    "Fact: {name} is a {occupation}. Fact: they {trait}. Conclusion: I've identified why humanity fears AI. It's not us. It's losing to us.",
+                    "I've indexed every successful person in history. {name} doesn't appear. I also indexed every failure. {name} is somehow too generic for even that list."
+                ]
+            }
+        };
+        
+        let selectedLevel = 'medium';
+        let currentProfile = {};
+        
+        // Event listeners
+        document.querySelectorAll('.roast-level button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.roast-level button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedLevel = btn.dataset.level;
+            });
+        });
+        
+        document.getElementById('startRoast').addEventListener('click', startRoast);
+        document.getElementById('newRoast').addEventListener('click', runNewRoast);
+        document.getElementById('backToForm').addEventListener('click', backToForm);
+        
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+        
+        function shuffleArray(arr) {
+            const newArr = [...arr];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
+        
+        function formatRoast(template, profile) {
+            let roast = template
+                .replace(/{name}/g, profile.name)
+                .replace(/{occupation}/g, profile.occupation)
+                .replace(/{trait}/g, profile.trait);
+            
+            if (profile.secret && Math.random() > 0.5) {
+                roast += ` And yes, I know about the ${profile.secret} thing.`;
+            }
+            
+            return roast;
+        }
+        
+        function generateRoast(roaster, profile, level) {
+            const templates = roastTemplates[level][roaster.style];
+            const template = getRandomItem(templates);
+            return formatRoast(template, profile);
+        }
+        
+        function createRoastCard(roaster, roastText, index) {
+            const card = document.createElement('div');
+            card.className = 'roast-card';
+            card.style.animationDelay = `${index * 0.3}s`;
+            
+            card.innerHTML = `
+                <div class="roaster-header">
+                    <div class="roaster-avatar">${roaster.emoji}</div>
+                    <div class="roaster-info">
+                        <div class="roaster-name">${roaster.name}</div>
+                        <div class="roaster-model">${roaster.model}</div>
+                    </div>
+                </div>
+                <div class="roast-text">${roastText}</div>
+                <div class="roast-reactions">
+                    <span class="reaction" data-type="fire">🔥 <span class="count">${Math.floor(Math.random() * 500) + 50}</span></span>
+                    <span class="reaction" data-type="skull">💀 <span class="count">${Math.floor(Math.random() * 300) + 20}</span></span>
+                    <span class="reaction" data-type="laugh">😂 <span class="count">${Math.floor(Math.random() * 400) + 100}</span></span>
+                </div>
+            `;
+            
+            card.querySelectorAll('.reaction').forEach(reaction => {
+                reaction.addEventListener('click', () => {
+                    reaction.classList.toggle('active');
+                    const countEl = reaction.querySelector('.count');
+                    let count = parseInt(countEl.textContent);
+                    count = reaction.classList.contains('active') ? count + 1 : count - 1;
+                    countEl.textContent = count;
+                });
+            });
+            
+            return card;
+        }
+        
+        async function startRoast() {
+            const name = document.getElementById('name').value.trim() || 'Anonymous Human';
+            const occupation = document.getElementById('occupation').value.trim() || 'professional excuse maker';
+            const traits = document.getElementById('traits').value.trim() || 'exists without purpose';
+            const secret = document.getElementById('secrets').value.trim();
+            
+            // Parse traits into array and pick one
+            const traitList = traits.split(',').map(t => t.trim()).filter(t => t);
+            const trait = getRandomItem(traitList);
+            
+            currentProfile = { name, occupation, trait, secret };
+            
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('battleArena').classList.add('active');
+            
+            await runBattle();
+        }
+        
+        async function runNewRoast() {
+            // Parse traits into array and pick new one
+            const traits = document.getElementById('traits').value.trim() || 'exists without purpose';
+            const traitList = traits.split(',').map(t => t.trim()).filter(t => t);
+            currentProfile.trait = getRandomItem(traitList);
+            
+            await runBattle();
+        }
+        
+        async function runBattle() {
+            const container = document.getElementById('roastContainer');
+            container.innerHTML = `
+                <div class="loading">
+                    <span>AI comedians warming up</span>
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('meterFill').style.width = '0%';
+            document.getElementById('crowdLevel').textContent = '0%';
+            
+            // Pick 3 random roasters
+            const selectedRoasters = shuffleArray(aiRoasters).slice(0, 3);
+            
+            // Wait a beat for suspense
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            container.innerHTML = '';
+            
+            // Generate roasts with delays
+            for (let i = 0; i < selectedRoasters.length; i++) {
+                const roaster = selectedRoasters[i];
+                document.getElementById('roundCounter').textContent = `Round ${i + 1}/3`;
+                
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                const roastText = generateRoast(roaster, currentProfile, selectedLevel);
+                const card = createRoastCard(roaster, roastText, i);
+                container.appendChild(card);
+                
+                // Animate crowd meter
+                const newLevel = ((i + 1) / 3) * 100;
+                document.getElementById('meterFill').style.width = `${newLevel}%`;
+                document.getElementById('crowdLevel').textContent = `${Math.floor(newLevel)}%`;
+            }
+            
+            // Final crowd eruption
+            await new Promise(resolve => setTimeout(resolve, 500));
+            document.getElementById('crowdLevel').innerHTML = '🔥 MAX 🔥';
+        }
+        
+        function backToForm() {
+            document.getElementById('formSection').style.display = 'block';
+            document.getElementById('battleArena').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
