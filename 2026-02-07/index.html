@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Atlas Task Commander</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #00c8ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 200, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 200, 255, 0.15);
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00c8ff;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .warehouse {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: 
+                linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px),
+                linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+                linear-gradient(135deg, #0d0d15 0%, #151520 100%);
+            background-size: 40px 40px, 40px 40px, 100% 100%;
+            border-radius: 16px;
+            border: 2px solid rgba(0, 200, 255, 0.2);
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        .robot {
+            position: absolute;
+            width: 50px;
+            height: 60px;
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 10;
+            cursor: grab;
+        }
+        
+        .robot-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .robot-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 18px;
+            background: linear-gradient(180deg, #3a3a4a, #2a2a3a);
+            border-radius: 8px 8px 4px 4px;
+            border: 2px solid #00c8ff;
+            box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+        
+        .robot-eyes {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+        }
+        
+        .robot-eye {
+            width: 5px;
+            height: 5px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: blink 3s infinite;
+            box-shadow: 0 0 8px #00ff88;
+        }
+        
+        @keyframes blink {
+            0%, 90%, 100% { opacity: 1; }
+            95% { opacity: 0.2; }
+        }
+        
+        .robot-torso {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 28px;
+            background: linear-gradient(180deg, #4a4a5a, #3a3a4a);
+            border-radius: 6px;
+            border: 2px solid #555;
+        }
+        
+        .robot-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #00c8ff, #0088aa);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 5px #00c8ff, 0 0 10px #00c8ff; }
+            50% { box-shadow: 0 0 15px #00c8ff, 0 0 25px #00c8ff; }
+        }
+        
+        .robot-legs {
+            position: absolute;
+            top: 42px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .robot-leg {
+            width: 10px;
+            height: 18px;
+            background: linear-gradient(180deg, #3a3a4a, #2a2a3a);
+            border-radius: 3px;
+        }
+        
+        .robot.walking .robot-leg:first-child {
+            animation: walkLeft 0.4s infinite;
+        }
+        
+        .robot.walking .robot-leg:last-child {
+            animation: walkRight 0.4s infinite;
+        }
+        
+        @keyframes walkLeft {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); }
+        }
+        
+        @keyframes walkRight {
+            0%, 100% { transform: rotate(15deg); }
+            50% { transform: rotate(-15deg); }
+        }
+        
+        .robot.carrying .robot-torso::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 10px;
+            background: linear-gradient(90deg, #ff8800, #ffaa00);
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(255, 136, 0, 0.5);
+        }
+        
+        .task-point {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            border: 2px dashed;
+        }
+        
+        .task-point.pickup {
+            background: rgba(255, 136, 0, 0.15);
+            border-color: rgba(255, 136, 0, 0.5);
+        }
+        
+        .task-point.dropoff {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+        
+        .task-point.obstacle {
+            background: rgba(255, 50, 50, 0.15);
+            border-color: rgba(255, 50, 50, 0.5);
+            border-style: solid;
+        }
+        
+        .task-point.completed {
+            opacity: 0.3;
+            transform: scale(0.8);
+        }
+        
+        .waypoint {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: rgba(0, 200, 255, 0.3);
+            border: 2px solid #00c8ff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: waypointPop 0.3s ease-out;
+        }
+        
+        @keyframes waypointPop {
+            from { transform: translate(-50%, -50%) scale(0); }
+            to { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .path-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(0, 200, 255, 0.6), rgba(0, 255, 136, 0.6));
+            transform-origin: left center;
+            pointer-events: none;
+            border-radius: 2px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00c8ff, #0088cc);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 200, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .mission-panel {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .mission-title {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .mission-desc {
+            color: #00ff88;
+            font-weight: 600;
+        }
+        
+        .log {
+            margin-top: 16px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.success { color: #00ff88; }
+        .log-entry.info { color: #00c8ff; }
+        .log-entry.warning { color: #ffaa00; }
+        
+        .touch-indicator {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(0, 200, 255, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none;
+            animation: touchRipple 0.6s ease-out forwards;
+        }
+        
+        @keyframes touchRipple {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+        
+        .level-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #ff00aa, #aa00ff);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #555;
+            font-size: 0.75rem;
+        }
+        
+        footer a {
+            color: #00c8ff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Atlas Task Commander</h1>
+            <p class="subtitle">Boston Dynamics Electric Atlas • Factory Sim</p>
+        </header>
+        
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value" id="tasksCompleted">0</div>
+                <div class="stat-label">Tasks</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="efficiency">100%</div>
+                <div class="stat-label">Efficiency</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="battery">100%</div>
+                <div class="stat-label">Battery</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="level">1</div>
+                <div class="stat-label">Level</div>
+            </div>
+        </div>
+        
+        <div class="warehouse" id="warehouse">
+            <div class="level-badge" id="levelBadge">LEVEL 1</div>
+            <div class="robot" id="robot">
+                <div class="robot-body">
+                    <div class="robot-head">
+                        <div class="robot-eyes">
+                            <div class="robot-eye"></div>
+                            <div class="robot-eye"></div>
+                        </div>
+                    </div>
+                    <div class="robot-torso">
+                        <div class="robot-core"></div>
+                    </div>
+                    <div class="robot-legs">
+                        <div class="robot-leg"></div>
+                        <div class="robot-leg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="executeBtn" disabled>▶ Execute Path</button>
+            <button class="btn btn-secondary" id="clearBtn">✕ Clear</button>
+            <button class="btn btn-secondary" id="newMissionBtn">↻ New</button>
+        </div>
+        
+        <div class="mission-panel">
+            <div class="mission-title">Current Mission</div>
+            <div class="mission-desc" id="missionDesc">Tap waypoints to guide Atlas</div>
+            <div class="log" id="log"></div>
+        </div>
+        
+        <footer>
+            Inspired by <a href="https://bostondynamics.com/atlas">Electric Atlas</a> going autonomous in factories • Feb 2026
+        </footer>
+    </div>
+    
+    <script>
+        const warehouse = document.getElementById('warehouse');
+        const robot = document.getElementById('robot');
+        const executeBtn = document.getElementById('executeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const newMissionBtn = document.getElementById('newMissionBtn');
+        const missionDesc = document.getElementById('missionDesc');
+        const logEl = document.getElementById('log');
+        const levelBadge = document.getElementById('levelBadge');
+        
+        let waypoints = [];
+        let pathElements = [];
+        let isExecuting = false;
+        let robotPos = { x: 30, y: 30 };
+        let carrying = false;
+        let tasks = [];
+        let stats = {
+            completed: 0,
+            efficiency: 100,
+            battery: 100,
+            level: 1
+        };
+        
+        const missions = [
+            { desc: "Pick up package 📦 and deliver to drop zone 🎯", pickups: 1, dropoffs: 1, obstacles: 0 },
+            { desc: "Collect 2 packages 📦📦 and deliver to drop zone", pickups: 2, dropoffs: 1, obstacles: 1 },
+            { desc: "Navigate obstacles ⛔ to complete delivery", pickups: 1, dropoffs: 1, obstacles: 3 },
+            { desc: "Multi-point delivery challenge!", pickups: 2, dropoffs: 2, obstacles: 2 },
+            { desc: "Expert mode: Maximum efficiency required", pickups: 3, dropoffs: 2, obstacles: 4 }
+        ];
+        
+        function log(msg, type = '') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.prepend(entry);
+            if (logEl.children.length > 20) logEl.lastChild.remove();
+        }
+        
+        function updateStats() {
+            document.getElementById('tasksCompleted').textContent = stats.completed;
+            document.getElementById('efficiency').textContent = stats.efficiency + '%';
+            document.getElementById('battery').textContent = Math.max(0, stats.battery) + '%';
+            document.getElementById('level').textContent = stats.level;
+            levelBadge.textContent = `LEVEL ${stats.level}`;
+        }
+        
+        function generateMission() {
+            clearPath();
+            tasks.forEach(t => t.remove());
+            tasks = [];
+            
+            const missionIndex = Math.min(stats.level - 1, missions.length - 1);
+            const mission = missions[missionIndex];
+            missionDesc.textContent = mission.desc;
+            
+            const usedPositions = [{ x: robotPos.x, y: robotPos.y }];
+            
+            function getRandomPos() {
+                let pos, attempts = 0;
+                do {
+                    pos = {
+                        x: 30 + Math.random() * (warehouse.clientWidth - 80),
+                        y: 30 + Math.random() * (warehouse.clientHeight - 80)
+                    };
+                    attempts++;
+                } while (attempts < 50 && usedPositions.some(p => 
+                    Math.abs(p.x - pos.x) < 70 && Math.abs(p.y - pos.y) < 70
+                ));
+                usedPositions.push(pos);
+                return pos;
+            }
+            
+            for (let i = 0; i < mission.pickups; i++) {
+                const pos = getRandomPos();
+                const task = document.createElement('div');
+                task.className = 'task-point pickup';
+                task.textContent = '📦';
+                task.style.left = pos.x + 'px';
+                task.style.top = pos.y + 'px';
+                task.dataset.type = 'pickup';
+                warehouse.appendChild(task);
+                tasks.push(task);
+            }
+            
+            for (let i = 0; i < mission.dropoffs; i++) {
+                const pos = getRandomPos();
+                const task = document.createElement('div');
+                task.className = 'task-point dropoff';
+                task.textContent = '🎯';
+                task.style.left = pos.x + 'px';
+                task.style.top = pos.y + 'px';
+                task.dataset.type = 'dropoff';
+                warehouse.appendChild(task);
+                tasks.push(task);
+            }
+            
+            for (let i = 0; i < mission.obstacles; i++) {
+                const pos = getRandomPos();
+                const task = document.createElement('div');
+                task.className = 'task-point obstacle';
+                task.textContent = '⛔';
+                task.style.left = pos.x + 'px';
+                task.style.top = pos.y + 'px';
+                task.dataset.type = 'obstacle';
+                warehouse.appendChild(task);
+                tasks.push(task);
+            }
+            
+            log(`New mission: ${mission.desc}`, 'info');
+        }
+        
+        function addWaypoint(x, y) {
+            if (isExecuting) return;
+            
+            // Touch indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'touch-indicator';
+            indicator.style.left = x + 'px';
+            indicator.style.top = y + 'px';
+            warehouse.appendChild(indicator);
+            setTimeout(() => indicator.remove(), 600);
+            
+            // Waypoint marker
+            const wp = document.createElement('div');
+            wp.className = 'waypoint';
+            wp.style.left = x + 'px';
+            wp.style.top = y + 'px';
+            warehouse.appendChild(wp);
+            
+            // Path line
+            const lastPos = waypoints.length > 0 ? waypoints[waypoints.length - 1] : robotPos;
+            const dx = x - lastPos.x;
+            const dy = y - lastPos.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            
+            const line = document.createElement('div');
+            line.className = 'path-line';
+            line.style.left = lastPos.x + 'px';
+            line.style.top = lastPos.y + 'px';
+            line.style.width = length + 'px';
+            line.style.transform = `rotate(${angle}rad)`;
+            warehouse.appendChild(line);
+            
+            waypoints.push({ x, y, el: wp });
+            pathElements.push(wp, line);
+            
+            executeBtn.disabled = false;
+        }
+        
+        function clearPath() {
+            waypoints = [];
+            pathElements.forEach(el => el.remove());
+            pathElements = [];
+            executeBtn.disabled = true;
+        }
+        
+        async function executePath() {
+            if (waypoints.length === 0 || isExecuting) return;
+            
+            isExecuting = true;
+            executeBtn.disabled = true;
+            robot.classList.add('walking');
+            log('Executing autonomous path...', 'info');
+            
+            for (const wp of waypoints) {
+                // Check for obstacles
+                const hitObstacle = tasks.find(t => 
+                    t.dataset.type === 'obstacle' &&
+                    !t.classList.contains('completed') &&
+                    Math.abs(parseFloat(t.style.left) - wp.x) < 40 &&
+                    Math.abs(parseFloat(t.style.top) - wp.y) < 40
+                );
+                
+                if (hitObstacle) {
+                    log('⚠️ Collision detected! Rerouting...', 'warning');
+                    stats.efficiency = Math.max(0, stats.efficiency - 10);
+                    stats.battery -= 5;
+                    updateStats();
+                    await new Promise(r => setTimeout(r, 500));
+                }
+                
+                robot.style.left = (wp.x - 25) + 'px';
+                robot.style.top = (wp.y - 30) + 'px';
+                robotPos = { x: wp.x, y: wp.y };
+                stats.battery -= 2;
+                updateStats();
+                
+                await new Promise(r => setTimeout(r, 800));
+                
+                // Check for pickup
+                const pickup = tasks.find(t => 
+                    t.dataset.type === 'pickup' &&
+                    !t.classList.contains('completed') &&
+                    Math.abs(parseFloat(t.style.left) - wp.x) < 40 &&
+                    Math.abs(parseFloat(t.style.top) - wp.y) < 40
+                );
+                
+                if (pickup && !carrying) {
+                    pickup.classList.add('completed');
+                    carrying = true;
+                    robot.classList.add('carrying');
+                    log('📦 Package collected!', 'success');
+                    await new Promise(r => setTimeout(r, 300));
+                }
+                
+                // Check for dropoff
+                const dropoff = tasks.find(t => 
+                    t.dataset.type === 'dropoff' &&
+                    !t.classList.contains('completed') &&
+                    Math.abs(parseFloat(t.style.left) - wp.x) < 40 &&
+                    Math.abs(parseFloat(t.style.top) - wp.y) < 40
+                );
+                
+                if (dropoff && carrying) {
+                    dropoff.classList.add('completed');
+                    carrying = false;
+                    robot.classList.remove('carrying');
+                    stats.completed++;
+                    log('🎯 Delivery complete!', 'success');
+                    await new Promise(r => setTimeout(r, 300));
+                }
+                
+                wp.el.remove();
+            }
+            
+            robot.classList.remove('walking');
+            waypoints = [];
+            pathElements.forEach(el => el.remove());
+            pathElements = [];
+            isExecuting = false;
+            
+            // Check if all tasks complete
+            const remainingPickups = tasks.filter(t => t.dataset.type === 'pickup' && !t.classList.contains('completed'));
+            const remainingDropoffs = tasks.filter(t => t.dataset.type === 'dropoff' && !t.classList.contains('completed'));
+            
+            if (remainingPickups.length === 0 && remainingDropoffs.length === 0) {
+                stats.level++;
+                log(`🎉 LEVEL ${stats.level} UNLOCKED!`, 'success');
+                stats.battery = Math.min(100, stats.battery + 30);
+                updateStats();
+                setTimeout(generateMission, 1500);
+            } else {
+                log(`Remaining: ${remainingPickups.length} pickups, ${remainingDropoffs.length} dropoffs`, 'info');
+            }
+        }
+        
+        warehouse.addEventListener('click', (e) => {
+            const rect = warehouse.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            addWaypoint(x, y);
+        });
+        
+        warehouse.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const rect = warehouse.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            addWaypoint(x, y);
+        });
+        
+        executeBtn.addEventListener('click', executePath);
+        clearBtn.addEventListener('click', clearPath);
+        newMissionBtn.addEventListener('click', generateMission);
+        
+        // Initialize
+        robot.style.left = '30px';
+        robot.style.top = '30px';
+        generateMission();
+        updateStats();
+        log('Atlas Task Commander initialized', 'info');
+        log('Tap the warehouse to set waypoints', 'info');
+    </script>
+</body>
+</html>
