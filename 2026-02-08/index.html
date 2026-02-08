@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Data Harvester Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --accent-red: #ff3366;
+            --accent-cyan: #00ffff;
+            --accent-green: #00ff88;
+            --accent-yellow: #ffcc00;
+            --text-primary: #ffffff;
+            --text-secondary: #8888aa;
+            --border-color: #2a2a3a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            color: var(--accent-red);
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            background: var(--bg-card);
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .upload-zone.processing {
+            border-color: var(--accent-red);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 51, 102, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(255, 51, 102, 0.4); }
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Scanning Animation */
+        .scan-line {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+            animation: scan 2s linear infinite;
+        }
+
+        .upload-zone.processing .scan-line {
+            display: block;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* Results Section */
+        .results {
+            display: none;
+        }
+
+        .results.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 25px 0 15px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--accent-red);
+            letter-spacing: 2px;
+        }
+
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-red), transparent);
+        }
+
+        /* Data Cards */
+        .data-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-red);
+        }
+
+        .data-card.warning::before { background: var(--accent-yellow); }
+        .data-card.critical::before { background: var(--accent-red); }
+        .data-card.info::before { background: var(--accent-cyan); }
+
+        .data-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .data-value {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confidence {
+            font-size: 11px;
+            color: var(--accent-green);
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Inferred Data */
+        .inferred-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .inferred-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .inferred-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .inferred-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .inferred-value {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Progress Bars */
+        .progress-item {
+            margin-bottom: 15px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+
+        .progress-fill.high { background: var(--accent-red); }
+        .progress-fill.medium { background: var(--accent-yellow); }
+        .progress-fill.low { background: var(--accent-green); }
+
+        /* Summary Box */
+        .summary-box {
+            background: linear-gradient(135deg, rgba(255, 51, 102, 0.1), rgba(0, 255, 255, 0.1));
+            border: 1px solid var(--accent-red);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .summary-count {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent-red);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .summary-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .summary-text {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            background: rgba(255, 204, 0, 0.1);
+            border: 1px solid var(--accent-yellow);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .warning-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .warning-text strong {
+            color: var(--accent-yellow);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        /* Typing animation */
+        .typing {
+            display: inline-block;
+        }
+
+        .typing::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 360px) {
+            .title { font-size: 24px; }
+            .inferred-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">⚠️ SIMULATION</div>
+            <h1 class="title">AI Data Harvester</h1>
+            <p class="subtitle">See what AI companies might extract from a single selfie. No actual upload — this is educational.</p>
+        </header>
+
+        <div class="upload-zone" id="uploadZone">
+            <div class="scan-line"></div>
+            <div class="upload-icon">📸</div>
+            <div class="upload-text" id="uploadText">Tap to "Upload" a Selfie</div>
+            <div class="upload-hint" id="uploadHint">Don't worry — nothing actually uploads</div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="section-header">BIOMETRIC EXTRACTION</div>
+            
+            <div class="data-card critical">
+                <div class="data-label">Face Geometry Hash</div>
+                <div class="data-value">
+                    <span id="faceHash">a7f3b2c9...</span>
+                    <span class="confidence">99.7% unique</span>
+                </div>
+            </div>
+
+            <div class="data-card warning">
+                <div class="data-label">Estimated Demographics</div>
+                <div class="data-value" id="demographics">Loading...</div>
+            </div>
+
+            <div class="data-card info">
+                <div class="data-label">Emotional State</div>
+                <div class="data-value" id="emotion">Analyzing...</div>
+            </div>
+
+            <div class="section-header">INFERRED PROFILE</div>
+
+            <div class="inferred-grid" id="inferredGrid">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="section-header">BEHAVIORAL PREDICTIONS</div>
+
+            <div class="data-card">
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Impulse Purchase Likelihood</span>
+                        <span id="impulseValue">--</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill high" id="impulseFill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Political Persuadability</span>
+                        <span id="politicalValue">--</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill medium" id="politicalFill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Health Risk Score</span>
+                        <span id="healthValue">--</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill low" id="healthFill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-count" id="dataPoints">0</div>
+                <div class="summary-label">Data Points Extracted</div>
+                <div class="summary-text">
+                    This information can be stored forever, sold to advertisers, 
+                    used by insurance companies, or accessed by governments.
+                </div>
+            </div>
+
+            <div class="warning-banner">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-text">
+                    <strong>This was a simulation.</strong> But when you upload real photos to AI services, 
+                    this data extraction happens for real. Your face becomes a permanent identifier — 
+                    more unique than your fingerprint.
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="tryAgain">Try Again</button>
+                <button class="btn btn-primary" id="shareBtn">Share Warning</button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            Built by <a href="https://github.com/Johnsonbros/daily-ai-trends">ZEKE</a> · Feb 8, 2026<br>
+            Inspired by the viral AI caricature privacy concerns
+        </footer>
+    </div>
+
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const uploadText = document.getElementById('uploadText');
+        const uploadHint = document.getElementById('uploadHint');
+        const results = document.getElementById('results');
+
+        // Random data generators
+        const randomHash = () => {
+            const chars = '0123456789abcdef';
+            return Array.from({length: 8}, () => chars[Math.floor(Math.random() * 16)]).join('') + '...';
+        };
+
+        const demographics = [
+            'Male, 25-34, Caucasian',
+            'Female, 18-24, Asian',
+            'Male, 35-44, Hispanic',
+            'Female, 25-34, African American',
+            'Non-binary, 18-24, Mixed',
+            'Male, 45-54, South Asian',
+            'Female, 35-44, Middle Eastern'
+        ];
+
+        const emotions = [
+            '😊 Genuine happiness (micro-expressions detected)',
+            '😐 Neutral with underlying stress',
+            '🙂 Polite smile (forced - 73% confidence)',
+            '😌 Relaxed, content',
+            '😕 Slight anxiety detected',
+            '😊 Authentic joy, social engagement mode'
+        ];
+
+        const inferredData = [
+            { icon: '💰', label: 'Income Range', values: ['$45-65K', '$75-95K', '$100-150K', '$30-45K', '$150K+'] },
+            { icon: '🎓', label: 'Education', values: ['Bachelor\'s+', 'High School', 'Graduate Degree', 'Some College'] },
+            { icon: '💍', label: 'Relationship', values: ['Single', 'Married', 'Dating', 'Divorced', 'Complicated'] },
+            { icon: '🏠', label: 'Housing', values: ['Renter', 'Homeowner', 'Urban Apt', 'Suburban'] },
+            { icon: '🧠', label: 'Personality', values: ['Extrovert', 'Introvert', 'Ambivert', 'Neurotic'] },
+            { icon: '🛒', label: 'Consumer Type', values: ['Impulsive', 'Researcher', 'Brand Loyal', 'Bargain Hunter'] },
+            { icon: '📱', label: 'Tech Savvy', values: ['Early Adopter', 'Mainstream', 'Late Majority', 'Laggard'] },
+            { icon: '❤️', label: 'Health', values: ['Active', 'Sedentary', 'At Risk', 'Health Conscious'] }
+        ];
+
+        function simulateProcessing() {
+            uploadZone.classList.add('processing');
+            uploadText.textContent = 'Extracting biometric data...';
+            uploadHint.textContent = 'Mapping facial geometry...';
+
+            const messages = [
+                'Mapping facial geometry...',
+                'Analyzing micro-expressions...',
+                'Cross-referencing databases...',
+                'Building psychological profile...',
+                'Calculating behavioral predictions...',
+                'Packaging data for sale...'
+            ];
+
+            let messageIndex = 0;
+            const messageInterval = setInterval(() => {
+                messageIndex++;
+                if (messageIndex < messages.length) {
+                    uploadHint.textContent = messages[messageIndex];
+                }
+            }, 400);
+
+            setTimeout(() => {
+                clearInterval(messageInterval);
+                uploadZone.classList.remove('processing');
+                uploadZone.style.display = 'none';
+                showResults();
+            }, 2500);
+        }
+
+        function showResults() {
+            results.classList.add('visible');
+
+            // Face hash
+            document.getElementById('faceHash').textContent = randomHash();
+
+            // Demographics
+            setTimeout(() => {
+                document.getElementById('demographics').textContent = 
+                    demographics[Math.floor(Math.random() * demographics.length)];
+            }, 300);
+
+            // Emotion
+            setTimeout(() => {
+                document.getElementById('emotion').textContent = 
+                    emotions[Math.floor(Math.random() * emotions.length)];
+            }, 600);
+
+            // Inferred grid
+            const grid = document.getElementById('inferredGrid');
+            grid.innerHTML = '';
+            inferredData.forEach((item, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'inferred-item';
+                    div.innerHTML = `
+                        <div class="inferred-icon">${item.icon}</div>
+                        <div class="inferred-label">${item.label}</div>
+                        <div class="inferred-value">${item.values[Math.floor(Math.random() * item.values.length)]}</div>
+                    `;
+                    grid.appendChild(div);
+                }, 800 + (index * 100));
+            });
+
+            // Progress bars
+            setTimeout(() => {
+                const impulse = 60 + Math.floor(Math.random() * 30);
+                document.getElementById('impulseValue').textContent = impulse + '%';
+                document.getElementById('impulseFill').style.width = impulse + '%';
+            }, 1500);
+
+            setTimeout(() => {
+                const political = 40 + Math.floor(Math.random() * 40);
+                document.getElementById('politicalValue').textContent = political + '%';
+                document.getElementById('politicalFill').style.width = political + '%';
+            }, 1700);
+
+            setTimeout(() => {
+                const health = 20 + Math.floor(Math.random() * 50);
+                document.getElementById('healthValue').textContent = health + '%';
+                document.getElementById('healthFill').style.width = health + '%';
+            }, 1900);
+
+            // Data points counter
+            setTimeout(() => {
+                const target = 147 + Math.floor(Math.random() * 50);
+                let current = 0;
+                const counter = document.getElementById('dataPoints');
+                const interval = setInterval(() => {
+                    current += Math.ceil((target - current) / 10);
+                    counter.textContent = current;
+                    if (current >= target) {
+                        counter.textContent = target;
+                        clearInterval(interval);
+                    }
+                }, 50);
+            }, 2200);
+        }
+
+        uploadZone.addEventListener('click', simulateProcessing);
+
+        document.getElementById('tryAgain').addEventListener('click', () => {
+            results.classList.remove('visible');
+            uploadZone.style.display = 'block';
+            uploadText.textContent = 'Tap to "Upload" a Selfie';
+            uploadHint.textContent = 'Don\'t worry — nothing actually uploads';
+        });
+
+        document.getElementById('shareBtn').addEventListener('click', () => {
+            const text = '🚨 Did you know a single selfie can reveal 150+ data points about you? Income, personality, health risks, purchase behavior... Think twice before uploading to AI services.';
+            if (navigator.share) {
+                navigator.share({ text, url: window.location.href });
+            } else {
+                navigator.clipboard.writeText(text + ' ' + window.location.href);
+                alert('Copied to clipboard!');
+            }
+        });
+    </script>
+</body>
+</html>
