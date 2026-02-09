@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Exposé Generator — How AI Sees You</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #14141f;
+            --accent: #ff3366;
+            --accent-glow: #ff336650;
+            --text-primary: #ffffff;
+            --text-secondary: #888899;
+            --success: #00ff88;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #ff9966);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .trend-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 15px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px var(--accent-glow); }
+            50% { box-shadow: 0 0 25px var(--accent-glow); }
+        }
+        
+        /* Quiz Section */
+        .quiz-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid #222233;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #222233;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ff9966);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .question-counter {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            background: #1a1a2e;
+            border: 2px solid #2a2a3e;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .option:hover {
+            border-color: var(--accent);
+            transform: translateX(5px);
+        }
+        
+        .option:active {
+            transform: scale(0.98);
+        }
+        
+        .option.selected {
+            border-color: var(--accent);
+            background: #2a1a2e;
+        }
+        
+        /* Result Section */
+        .result-container {
+            display: none;
+            text-align: center;
+        }
+        
+        .result-container.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .avatar-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 20px auto;
+        }
+        
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--accent);
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #1a1a2e, #2a2a4e);
+        }
+        
+        .avatar-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+        }
+        
+        .avatar-eyes {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .eye {
+            width: 25px;
+            height: 25px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            animation: blink 4s ease infinite;
+        }
+        
+        .eye::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: lookAround 3s ease infinite;
+        }
+        
+        @keyframes blink {
+            0%, 95%, 100% { transform: scaleY(1); }
+            97% { transform: scaleY(0.1); }
+        }
+        
+        @keyframes lookAround {
+            0%, 100% { transform: translate(-50%, -50%); }
+            25% { transform: translate(-20%, -50%); }
+            75% { transform: translate(-80%, -50%); }
+        }
+        
+        .avatar-mouth {
+            width: 35px;
+            height: 18px;
+            border-radius: 0 0 50px 50px;
+            background: #ff3366;
+            margin-top: 10px;
+        }
+        
+        .avatar-accessory {
+            position: absolute;
+            font-size: 40px;
+        }
+        
+        .exposed-label {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .personality-type {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 25px 0 10px;
+            background: linear-gradient(135deg, var(--accent), #ff9966);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .roast-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            border: 1px solid #222233;
+        }
+        
+        .roast-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .roast-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .roast-text strong {
+            color: var(--text-primary);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #222233;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+        
+        .stat-bar {
+            height: 4px;
+            background: #222233;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ff9966);
+            border-radius: 2px;
+        }
+        
+        .share-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent), #cc2952);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .share-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+        
+        .restart-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid #333344;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .restart-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #222233;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            animation: loadingDots 1.5s ease infinite;
+        }
+        
+        /* Intro */
+        .intro {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent), #cc2952);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+        
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px var(--accent-glow);
+        }
+        
+        .warning-text {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 15px;
+            font-style: italic;
+        }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🔍</div>
+            <h1>Exposé Generator</h1>
+            <p class="subtitle">AI knows who you really are</p>
+            <span class="trend-badge">🔥 VIRAL TREND FEB 2026</span>
+        </header>
+        
+        <!-- Intro Screen -->
+        <div id="intro" class="intro">
+            <div class="quiz-container">
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
+                    The internet is obsessed with AI "exposing" people through caricatures. 
+                    Now it's your turn to get <strong style="color: var(--accent);">brutally analyzed</strong>.
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Answer 7 questions. Get your personality <strong style="color: white;">exposed</strong>.
+                    No hiding. No filter. Just truth. 💀
+                </p>
+            </div>
+            <button class="start-btn" onclick="startQuiz()">Expose Me 👀</button>
+            <p class="warning-text">⚠️ Results may be uncomfortably accurate</p>
+        </div>
+        
+        <!-- Quiz Screen -->
+        <div id="quiz" class="quiz-container hidden">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+            <div class="question-counter" id="counter">Question 1 of 7</div>
+            <div class="question-text" id="question"></div>
+            <div class="options" id="options"></div>
+        </div>
+        
+        <!-- Loading Screen -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">AI is analyzing your soul...</p>
+        </div>
+        
+        <!-- Results Screen -->
+        <div id="result" class="result-container">
+            <div class="avatar-container">
+                <div class="avatar">
+                    <div class="avatar-face" id="avatarFace">
+                        <div class="avatar-eyes">
+                            <div class="eye"></div>
+                            <div class="eye"></div>
+                        </div>
+                        <div class="avatar-mouth" id="avatarMouth"></div>
+                    </div>
+                    <div class="avatar-accessory" id="accessory"></div>
+                </div>
+                <span class="exposed-label">EXPOSED</span>
+            </div>
+            
+            <div class="personality-type" id="personalityType"></div>
+            
+            <div class="roast-card">
+                <div class="roast-header">
+                    <span>🎯</span> The Brutal Truth
+                </div>
+                <div class="roast-text" id="roastText"></div>
+            </div>
+            
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <button class="share-btn" onclick="shareResult()">📸 Share My Exposé</button>
+            <button class="restart-btn" onclick="restart()">↻ Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                q: "It's 2 AM. What are you doing?",
+                opts: [
+                    { text: "🛏️ Sleeping like a normal person", traits: { chaotic: 0, social: 0, ambitious: 0 } },
+                    { text: "📱 Doom-scrolling into the void", traits: { chaotic: 2, social: 1, ambitious: 0 } },
+                    { text: "💡 Working on my 'big idea'", traits: { chaotic: 1, social: 0, ambitious: 3 } },
+                    { text: "🍕 Making questionable food choices", traits: { chaotic: 3, social: 0, ambitious: 0 } }
+                ]
+            },
+            {
+                q: "Someone is wrong on the internet. You:",
+                opts: [
+                    { text: "🤐 Keep scrolling (not my circus)", traits: { chaotic: 0, social: 0, ambitious: 1 } },
+                    { text: "⚔️ Type a 500-word rebuttal", traits: { chaotic: 2, social: 2, ambitious: 1 } },
+                    { text: "😏 Leave a vague, passive-aggressive like", traits: { chaotic: 2, social: 1, ambitious: 0 } },
+                    { text: "📸 Screenshot for group chat roasting", traits: { chaotic: 3, social: 3, ambitious: 0 } }
+                ]
+            },
+            {
+                q: "Your friend cancels plans last minute:",
+                opts: [
+                    { text: "😤 Secretly relieved (was looking for an out)", traits: { chaotic: 1, social: 0, ambitious: 0 } },
+                    { text: "😢 Genuinely disappointed", traits: { chaotic: 0, social: 3, ambitious: 0 } },
+                    { text: "📱 Already texting backup friends", traits: { chaotic: 1, social: 3, ambitious: 1 } },
+                    { text: "🎮 Time to game in peace", traits: { chaotic: 0, social: 0, ambitious: 0 } }
+                ]
+            },
+            {
+                q: "Your email inbox has:",
+                opts: [
+                    { text: "✨ 0 unread (I'm that person)", traits: { chaotic: 0, social: 1, ambitious: 3 } },
+                    { text: "📬 Like 50, mostly newsletters", traits: { chaotic: 1, social: 1, ambitious: 1 } },
+                    { text: "🔥 500+ (I'll get to it)", traits: { chaotic: 2, social: 1, ambitious: 0 } },
+                    { text: "☠️ 10,000+ (stopped counting)", traits: { chaotic: 3, social: 0, ambitious: 0 } }
+                ]
+            },
+            {
+                q: "At a party, you're most likely to:",
+                opts: [
+                    { text: "🐕 Find the pet and stay there", traits: { chaotic: 0, social: 0, ambitious: 0 } },
+                    { text: "💬 Deep-talk one person all night", traits: { chaotic: 0, social: 2, ambitious: 1 } },
+                    { text: "🎤 Become the center of attention", traits: { chaotic: 2, social: 3, ambitious: 2 } },
+                    { text: "🚪 Already planning my escape", traits: { chaotic: 1, social: 0, ambitious: 0 } }
+                ]
+            },
+            {
+                q: "Your personal aesthetic is best described as:",
+                opts: [
+                    { text: "🖤 Dark academia / mysterious", traits: { chaotic: 1, social: 0, ambitious: 2 } },
+                    { text: "☀️ Clean girl / minimalist", traits: { chaotic: 0, social: 2, ambitious: 2 } },
+                    { text: "🌈 Chaotic maximalist", traits: { chaotic: 3, social: 2, ambitious: 1 } },
+                    { text: "👻 I don't have an aesthetic (lie)", traits: { chaotic: 2, social: 0, ambitious: 0 } }
+                ]
+            },
+            {
+                q: "What's your relationship with deadlines?",
+                opts: [
+                    { text: "📅 Done early (anxiety is my fuel)", traits: { chaotic: 0, social: 0, ambitious: 3 } },
+                    { text: "⏰ Last minute, but always delivered", traits: { chaotic: 2, social: 0, ambitious: 2 } },
+                    { text: "🔥 What deadline? *sweating*", traits: { chaotic: 3, social: 0, ambitious: 0 } },
+                    { text: "📧 Already asked for an extension", traits: { chaotic: 2, social: 1, ambitious: 1 } }
+                ]
+            }
+        ];
+
+        const personalities = [
+            {
+                name: "The Functional Disaster",
+                minChaotic: 8, maxChaotic: 21,
+                roast: "You've mastered the art of looking like you have it together while your life is held together by caffeine and denial. Your friends think you're 'quirky.' Your therapist thinks you're a <strong>case study</strong>. That 2 AM snack you're about to make? It's not self-care, it's a coping mechanism. But honestly? You're everyone's favorite mess.",
+                accessory: "top: 0; left: 50%; transform: translateX(-50%) rotate(15deg);",
+                accessoryEmoji: "☕",
+                mouthStyle: "border-radius: 50%; height: 12px;",
+                stats: { "Chaos Level": 89, "Self-Awareness": 34, "Productivity": 62, "Delusion": 78 }
+            },
+            {
+                name: "The Secret Overachiever",
+                minAmbitious: 8, maxChaotic: 7,
+                roast: "You pretend to be chill but your Notes app has a 5-year plan with quarterly milestones. That 'casual' success? <strong>Meticulously planned</strong>. You tell people 'I just got lucky' while working 60 hours a week. Your impostor syndrome has impostor syndrome. Take a nap sometime — you've earned it, but you won't.",
+                accessory: "top: -10px; right: 10px;",
+                accessoryEmoji: "📊",
+                mouthStyle: "width: 20px; height: 20px; border-radius: 50%;",
+                stats: { "Chaos Level": 23, "Self-Awareness": 45, "Productivity": 94, "Delusion": 67 }
+            },
+            {
+                name: "The Social Butterfly (in Disguise)",
+                minSocial: 8,
+                roast: "You claim to be an introvert but your screen time says otherwise. You're not avoiding people — you're <strong>curating your audience</strong>. That group chat you're 'too tired' to respond to? You've read every message three times. You're not antisocial, you're selectively social, and honestly? That's just being a snob with extra steps.",
+                accessory: "top: -5px; left: 10px;",
+                accessoryEmoji: "💬",
+                mouthStyle: "width: 40px; border-radius: 0 0 50px 50px;",
+                stats: { "Chaos Level": 56, "Self-Awareness": 72, "Productivity": 45, "Delusion": 61 }
+            },
+            {
+                name: "The Chaos Gremlin",
+                minChaotic: 12,
+                roast: "Your energy is 'let's see what happens' and honestly, it's terrifying. You don't have red flags — <strong>you ARE the red flag</strong>, but in a fun way? Your life is a series of main character moments that would give a risk analyst nightmares. You'll either become a CEO or end up on a true crime podcast. No in-between.",
+                accessory: "top: -15px; left: 50%; transform: translateX(-50%) rotate(-10deg);",
+                accessoryEmoji: "🔥",
+                mouthStyle: "width: 45px; height: 25px; border-radius: 0 0 50px 50px;",
+                stats: { "Chaos Level": 97, "Self-Awareness": 88, "Productivity": 33, "Delusion": 12 }
+            },
+            {
+                name: "The Normie (Allegedly)",
+                roast: "You answered 'normal' to everything and that's the biggest red flag of all. Either you're genuinely well-adjusted (sus) or you're in <strong>Olympic-level denial</strong>. The people who 'have it together' are usually one minor inconvenience away from a breakdown. When was the last time you let yourself be unhinged? Try it. It's good for you.",
+                accessory: "top: 0; right: 15px;",
+                accessoryEmoji: "✨",
+                mouthStyle: "width: 30px; height: 8px; border-radius: 0 0 20px 20px;",
+                stats: { "Chaos Level": 34, "Self-Awareness": 56, "Productivity": 67, "Delusion": 89 }
+            }
+        ];
+
+        let currentQuestion = 0;
+        let scores = { chaotic: 0, social: 0, ambitious: 0 };
+
+        function startQuiz() {
+            document.getElementById('intro').classList.add('hidden');
+            document.getElementById('quiz').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById('question').textContent = q.q;
+            document.getElementById('counter').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            document.getElementById('progress').style.width = `${((currentQuestion) / questions.length) * 100}%`;
+            
+            const optionsHtml = q.opts.map((opt, i) => 
+                `<div class="option" onclick="selectOption(${i})">${opt.text}</div>`
+            ).join('');
+            document.getElementById('options').innerHTML = optionsHtml;
+        }
+
+        function selectOption(idx) {
+            const opts = document.querySelectorAll('.option');
+            opts.forEach(o => o.classList.remove('selected'));
+            opts[idx].classList.add('selected');
+            
+            const selected = questions[currentQuestion].opts[idx];
+            scores.chaotic += selected.traits.chaotic;
+            scores.social += selected.traits.social;
+            scores.ambitious += selected.traits.ambitious;
+            
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    showQuestion();
+                } else {
+                    showLoading();
+                }
+            }, 300);
+        }
+
+        function showLoading() {
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('loading').classList.add('show');
+            
+            const messages = [
+                "AI is analyzing your soul...",
+                "Calculating your delusion level...",
+                "Cross-referencing with FBI database...",
+                "Generating brutal honesty...",
+                "Finding the perfect roast..."
+            ];
+            
+            let msgIdx = 0;
+            const loadingText = document.querySelector('.loading-text');
+            const interval = setInterval(() => {
+                msgIdx++;
+                if (msgIdx < messages.length) {
+                    loadingText.textContent = messages[msgIdx];
+                }
+            }, 600);
+            
+            setTimeout(() => {
+                clearInterval(interval);
+                showResult();
+            }, 3000);
+        }
+
+        function showResult() {
+            document.getElementById('loading').classList.remove('show');
+            
+            // Find matching personality
+            let personality = personalities[4]; // default normie
+            
+            for (const p of personalities) {
+                let match = true;
+                if (p.minChaotic && scores.chaotic < p.minChaotic) match = false;
+                if (p.maxChaotic && scores.chaotic > p.maxChaotic) match = false;
+                if (p.minSocial && scores.social < p.minSocial) match = false;
+                if (p.minAmbitious && scores.ambitious < p.minAmbitious) match = false;
+                
+                if (match && p !== personalities[4]) {
+                    personality = p;
+                    break;
+                }
+            }
+            
+            // Update UI
+            document.getElementById('personalityType').textContent = personality.name;
+            document.getElementById('roastText').innerHTML = personality.roast;
+            
+            // Avatar customization
+            document.getElementById('avatarMouth').style.cssText = personality.mouthStyle;
+            document.getElementById('accessory').textContent = personality.accessoryEmoji;
+            document.getElementById('accessory').style.cssText = personality.accessory;
+            
+            // Stats
+            const statsHtml = Object.entries(personality.stats).map(([label, value]) => `
+                <div class="stat-box">
+                    <div class="stat-label">${label}</div>
+                    <div class="stat-value">${value}%</div>
+                    <div class="stat-bar">
+                        <div class="stat-fill" style="width: ${value}%"></div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('statsGrid').innerHTML = statsHtml;
+            
+            document.getElementById('result').classList.add('show');
+        }
+
+        function shareResult() {
+            const name = document.getElementById('personalityType').textContent;
+            const text = `🔍 I got "${name}" on the AI Exposé Generator!\n\nFind out how AI exposes YOU 👀`;
+            
+            if (navigator.share) {
+                navigator.share({ title: 'My AI Exposé', text, url: window.location.href });
+            } else {
+                navigator.clipboard.writeText(text + '\n' + window.location.href);
+                alert('Copied to clipboard!');
+            }
+        }
+
+        function restart() {
+            currentQuestion = 0;
+            scores = { chaotic: 0, social: 0, ambitious: 0 };
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('intro').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
