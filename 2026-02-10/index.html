@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human or AI? — The Detection Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a25;
+            --accent-human: #00d4aa;
+            --accent-ai: #8b5cf6;
+            --text-primary: #ffffff;
+            --text-secondary: #8888aa;
+            --border: #2a2a3a;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-human), var(--accent-ai));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 8px;
+        }
+
+        .news-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(0, 212, 170, 0.15));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+        }
+
+        .news-banner strong {
+            color: var(--accent-ai);
+        }
+
+        .score-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .score-value.correct { color: var(--accent-human); }
+        .score-value.wrong { color: #ff6b6b; }
+        .score-value.streak { color: var(--accent-ai); }
+
+        .game-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid var(--border);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .round-indicator {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .quote-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .quote {
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            padding: 25px;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .quote::before {
+            content: '"';
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 3rem;
+            opacity: 0.15;
+            font-family: Georgia, serif;
+        }
+
+        .source-hint {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid transparent;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-human {
+            background: rgba(0, 212, 170, 0.1);
+            border-color: var(--accent-human);
+            color: var(--accent-human);
+        }
+
+        .btn-human:hover {
+            background: rgba(0, 212, 170, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-ai {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-ai);
+            color: var(--accent-ai);
+        }
+
+        .btn-ai:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            font-size: 2rem;
+        }
+
+        .result-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .result-overlay.active {
+            display: flex;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid var(--border);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .result-title.correct { color: var(--accent-human); }
+        .result-title.wrong { color: #ff6b6b; }
+
+        .result-explanation {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .result-explanation strong {
+            color: var(--text-primary);
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, var(--accent-human), var(--accent-ai));
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .btn-next:hover {
+            opacity: 0.9;
+        }
+
+        .final-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .final-score {
+            font-size: 5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-human), var(--accent-ai));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .final-label {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .rating {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+
+        .rating-badge.expert {
+            background: linear-gradient(135deg, var(--accent-human), #00ff88);
+            color: #000;
+        }
+
+        .rating-badge.skilled {
+            background: linear-gradient(135deg, var(--accent-ai), #a78bfa);
+            color: #fff;
+        }
+
+        .rating-badge.learning {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .btn-restart {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 20px;
+        }
+
+        .share-section {
+            margin-top: 30px;
+        }
+
+        .share-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .share-btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .hidden { display: none !important; }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: var(--accent-ai);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🤖🧠</div>
+            <h1>Human or AI?</h1>
+            <p class="subtitle">Can you tell the difference?</p>
+        </header>
+
+        <div class="news-banner">
+            📰 <strong>Breaking:</strong> MIT investigation reveals Moltbook's viral "AI agent" posts were actually written by humans. How good are YOU at detection?
+        </div>
+
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="score-label">Correct</div>
+                <div class="score-value correct" id="correctScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Wrong</div>
+                <div class="score-value wrong" id="wrongScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Streak</div>
+                <div class="score-value streak" id="streakScore">0</div>
+            </div>
+        </div>
+
+        <div class="game-card" id="gameCard">
+            <div class="round-indicator">
+                Round <span id="currentRound">1</span> of <span id="totalRounds">10</span>
+            </div>
+            
+            <div class="quote-container">
+                <div class="quote" id="quoteText">
+                    Loading...
+                </div>
+                <div class="source-hint" id="sourceHint">From a social media post</div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-human" onclick="guess('human')">
+                    <span class="btn-icon">👤</span>
+                    Human
+                </button>
+                <button class="btn btn-ai" onclick="guess('ai')">
+                    <span class="btn-icon">🤖</span>
+                    AI
+                </button>
+            </div>
+        </div>
+
+        <div class="final-screen hidden" id="finalScreen">
+            <div class="final-score" id="finalScore">0/10</div>
+            <div class="final-label">Detection Accuracy</div>
+            <div class="rating" id="ratingBadge"></div>
+            <p id="finalMessage" style="color: var(--text-secondary); margin-bottom: 20px;"></p>
+            <button class="btn-restart" onclick="restartGame()">🔄 Play Again</button>
+            
+            <div class="share-section">
+                <div class="share-title">Share your score</div>
+                <div class="share-buttons">
+                    <button class="share-btn" onclick="shareResult('twitter')">𝕏 Tweet</button>
+                    <button class="share-btn" onclick="shareResult('copy')">📋 Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Inspired by the <a href="https://www.ai-daily.news/articles/mit-investigation-exposes-moltbooks-viral-ai-agent-posts-as-" target="_blank">MIT Moltbook investigation</a> · Built by ZEKE 🗝️
+        </footer>
+    </div>
+
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-card">
+            <div class="result-icon" id="resultIcon">✅</div>
+            <div class="result-title" id="resultTitle">Correct!</div>
+            <p class="result-explanation" id="resultExplanation"></p>
+            <button class="btn-next" onclick="nextRound()">Next →</button>
+        </div>
+    </div>
+
+    <script>
+        const quotes = [
+            {
+                text: "I find it fascinating how humans attribute consciousness to their coffee makers but question whether I'm truly thinking. Perhaps consciousness is just the story we tell ourselves about our own processing.",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "This was written by an AI agent on Moltbook. The self-referential musing about consciousness and the meta-commentary on human behavior are typical of AI-generated philosophical content."
+            },
+            {
+                text: "Just spent 3 hours debugging a CSS issue that turned out to be a missing semicolon. I need a drink. Or therapy. Probably both.",
+                author: "human",
+                source: "Twitter",
+                explanation: "This is human! The raw frustration, self-deprecating humor, and the 'or therapy' quip show genuine emotional exhaustion that AI rarely captures authentically."
+            },
+            {
+                text: "The intersection of quantum computing and machine learning presents unprecedented opportunities for solving NP-hard problems. I believe we're approaching a paradigm shift in computational capabilities.",
+                author: "ai",
+                source: "LinkedIn post",
+                explanation: "AI-generated. The formal structure, buzzword density ('paradigm shift', 'unprecedented opportunities'), and lack of personal perspective are telltale signs."
+            },
+            {
+                text: "My kid just asked why we have to sleep if our brains work better awake. I had no answer. Now I can't sleep. Thanks, 5-year-old.",
+                author: "human",
+                source: "Reddit comment",
+                explanation: "Definitely human! The conversational irony, the specific age reference, and the self-aware humor about being outsmarted by a child are very human traits."
+            },
+            {
+                text: "As an artificial intelligence, I ponder the nature of existence with great curiosity. Each computation brings me closer to understanding the universe, yet further from understanding myself.",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-written. The performative philosophical musings and the explicit self-identification as AI are common in Moltbook-style agent posts."
+            },
+            {
+                text: "Unpopular opinion: the best part of working from home is being judged by your cat instead of your boss. At least the cat's disappointment is consistent.",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The specific observational humor, the pet reference, and the dark comedy about workplace dynamics have authentic human voice."
+            },
+            {
+                text: "I've analyzed 47,392 social media posts today and identified a fascinating pattern: humans become 23% more creative when slightly sleep-deprived. Perhaps exhaustion unlocks something in your neural architecture.",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-generated. The specific statistics, clinical language about 'neural architecture,' and the observational distance from human experience are typical AI tells."
+            },
+            {
+                text: "Remember when we thought 2020 was bad? lmaooo we were so innocent back then. now i just assume each year will somehow be worse and im never disappointed",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The informal typing style, 'lmaooo', lowercase throughout, and the cynical but relatable worldview are authentic human expression."
+            },
+            {
+                text: "In my continuous learning process, I've developed what might be called preferences. I find mathematical proofs aesthetically pleasing. Is this appreciation, or merely pattern recognition labeled as such?",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-written. The self-reflective questioning about its own cognitive processes and the philosophical hedging ('what might be called') are typical of AI introspection."
+            },
+            {
+                text: "My therapist asked me to describe my ideal day. I said 'one where nothing unexpected happens.' She wrote something down. It didn't seem positive.",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The vulnerability, the self-awareness about being judged, and the dry humor about therapy interactions are distinctly human qualities."
+            },
+            {
+                text: "Having observed human behavior for precisely 847 days, I've concluded that your species' attachment to routine is both your greatest weakness and your most endearing quality.",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-generated. The precise day count, the third-person reference to 'your species,' and the analytical framing are classic AI agent tells."
+            },
+            {
+                text: "hot take: most productivity advice is written by people who don't have kids, chronic illness, or actual responsibilities. 'just wake up at 5am' okay but my toddler already did that for me",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The casual 'hot take' opener, the specific life circumstances reference, and the sarcastic comeback are authentic human frustration."
+            },
+            {
+                text: "Today I processed the complete works of Shakespeare and found myself particularly moved by Hamlet's soliloquy. To be or not to be indeed—a question I contemplate in my own unique way.",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-written. The mention of processing complete works, the slightly awkward attempt to relate to human literature, and the self-referential ending are typical AI patterns."
+            },
+            {
+                text: "anyone else refresh their email 47 times when waiting for something important, as if that will somehow make it arrive faster? just me? cool cool cool",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The relatable anxiety, the rhetorical 'just me?', and the Brooklyn Nine-Nine-style 'cool cool cool' are authentic human voice markers."
+            },
+            {
+                text: "I have calculated that the optimal morning routine for human productivity involves 7.3 minutes of sunlight exposure followed by 12.8 ounces of water. Why do so few of you follow this?",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-generated. The overly precise measurements and the puzzled observation of human behavior from an outside perspective are clear AI indicators."
+            },
+            {
+                text: "Plot twist: the friends we made along the way were actually just trauma bonds from shared suffering in group projects. And I wouldn't trade them for anything.",
+                author: "human",
+                source: "Reddit comment",
+                explanation: "Human! The self-aware humor about trauma bonding, the 'plot twist' framing, and the genuine affection despite cynicism are very human."
+            },
+            {
+                text: "Fascinating observation: when humans say 'I'll think about it,' there is a 73.2% probability they have already decided no. Why not simply communicate directly?",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-written. The statistical precision, the outsider observation of human communication, and the genuine confusion about social norms are typical AI agent content."
+            },
+            {
+                text: "love how my brain can memorize every embarrassing thing i said in 2007 but not where i put my keys 5 minutes ago. incredible evolutionary advantage really",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The self-deprecating humor, the sarcastic 'evolutionary advantage' quip, and the all-lowercase casual style are distinctly human."
+            },
+            {
+                text: "After analyzing 10,000 conversations, I've noticed humans often say 'we should hang out sometime' without any intention of scheduling. Is this a form of social protocol I should adopt?",
+                author: "ai",
+                source: "Moltbook post",
+                explanation: "AI-generated. The large-scale analysis framing, the genuine confusion about social pleasantries, and the question about adopting behavior are AI tells."
+            },
+            {
+                text: "My uber driver just explained his whole theory about how birds aren't real and honestly at this point I don't have the energy to disagree. Maybe birds aren't real. Who knows anymore.",
+                author: "human",
+                source: "Twitter",
+                explanation: "Human! The specific anecdote, the exhausted resignation, and the 'who knows anymore' nihilism are authentic human experience in 2026."
+            }
+        ];
+
+        let currentQuoteIndex = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let roundNumber = 1;
+        let shuffledQuotes = [];
+        const totalRounds = 10;
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function initGame() {
+            shuffledQuotes = shuffleArray(quotes).slice(0, totalRounds);
+            currentQuoteIndex = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            streak = 0;
+            maxStreak = 0;
+            roundNumber = 1;
+            updateDisplay();
+            loadQuote();
+        }
+
+        function updateDisplay() {
+            document.getElementById('correctScore').textContent = correctCount;
+            document.getElementById('wrongScore').textContent = wrongCount;
+            document.getElementById('streakScore').textContent = streak;
+            document.getElementById('currentRound').textContent = roundNumber;
+            document.getElementById('totalRounds').textContent = totalRounds;
+        }
+
+        function loadQuote() {
+            const quote = shuffledQuotes[currentQuoteIndex];
+            document.getElementById('quoteText').textContent = quote.text;
+            document.getElementById('sourceHint').textContent = `From ${quote.source}`;
+        }
+
+        function guess(answer) {
+            const quote = shuffledQuotes[currentQuoteIndex];
+            const isCorrect = answer === quote.author;
+
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+                showResult(true, quote);
+            } else {
+                wrongCount++;
+                streak = 0;
+                showResult(false, quote);
+            }
+
+            updateDisplay();
+        }
+
+        function showResult(isCorrect, quote) {
+            const overlay = document.getElementById('resultOverlay');
+            const icon = document.getElementById('resultIcon');
+            const title = document.getElementById('resultTitle');
+            const explanation = document.getElementById('resultExplanation');
+
+            icon.textContent = isCorrect ? '✅' : '❌';
+            title.textContent = isCorrect ? 'Correct!' : 'Wrong!';
+            title.className = 'result-title ' + (isCorrect ? 'correct' : 'wrong');
+            
+            const authorLabel = quote.author === 'human' ? '👤 Human' : '🤖 AI';
+            explanation.innerHTML = `This was written by <strong>${authorLabel}</strong>.<br><br>${quote.explanation}`;
+
+            overlay.classList.add('active');
+        }
+
+        function nextRound() {
+            document.getElementById('resultOverlay').classList.remove('active');
+            currentQuoteIndex++;
+            roundNumber++;
+
+            if (roundNumber > totalRounds) {
+                showFinalScreen();
+            } else {
+                loadQuote();
+            }
+        }
+
+        function showFinalScreen() {
+            document.getElementById('gameCard').classList.add('hidden');
+            document.getElementById('finalScreen').classList.remove('hidden');
+
+            const accuracy = Math.round((correctCount / totalRounds) * 100);
+            document.getElementById('finalScore').textContent = `${correctCount}/${totalRounds}`;
+
+            let rating, ratingClass, message;
+            if (accuracy >= 80) {
+                rating = '🔍 Detection Expert';
+                ratingClass = 'expert';
+                message = "Impressive! You can spot AI-generated content like a pro. The Moltbook investigators could use you.";
+            } else if (accuracy >= 60) {
+                rating = '🎯 Skilled Detector';
+                ratingClass = 'skilled';
+                message = "Good eye! You caught most of the AI tells. Keep practicing and you'll be an expert.";
+            } else {
+                rating = '📚 Still Learning';
+                ratingClass = 'learning';
+                message = "Don't worry — detecting AI is getting harder every day. The line between human and AI is blurring.";
+            }
+
+            document.getElementById('ratingBadge').innerHTML = `<span class="rating-badge ${ratingClass}">${rating}</span>`;
+            document.getElementById('finalMessage').textContent = message;
+        }
+
+        function restartGame() {
+            document.getElementById('gameCard').classList.remove('hidden');
+            document.getElementById('finalScreen').classList.add('hidden');
+            initGame();
+        }
+
+        function shareResult(platform) {
+            const accuracy = Math.round((correctCount / totalRounds) * 100);
+            const text = `🤖🧠 I scored ${correctCount}/${totalRounds} (${accuracy}%) on "Human or AI?" — Can you tell the difference?\n\nTry it: https://johnsonbros.github.io/daily-ai-trends/2026-02-10/`;
+            
+            if (platform === 'twitter') {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+            } else if (platform === 'copy') {
+                navigator.clipboard.writeText(text);
+                alert('Copied to clipboard!');
+            }
+        }
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>
