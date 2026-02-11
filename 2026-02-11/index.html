@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamScene 3D — AI Scene Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+#canvas-wrap{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%}
+#ui{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(transparent,rgba(10,10,15,.95) 30%);z-index:10}
+h1{font-size:14px;color:#7c5cfc;margin-bottom:8px;text-align:center;letter-spacing:2px;text-transform:uppercase}
+.prompt-row{display:flex;gap:8px}
+input{flex:1;padding:12px 16px;border-radius:12px;border:1px solid #2a2a3a;background:#15151f;color:#fff;font-size:15px;outline:none}
+input:focus{border-color:#7c5cfc}
+button{padding:12px 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c5cfc,#b44cfc);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+button:active{transform:scale(.96)}
+.presets{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.presets span{padding:6px 12px;background:#1a1a2a;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #2a2a3a;transition:.2s}
+.presets span:hover{border-color:#7c5cfc;color:#7c5cfc}
+#status{text-align:center;font-size:11px;color:#555;margin-top:6px}
+.info{position:absolute;top:12px;left:12px;z-index:10;font-size:11px;color:#444;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="canvas-wrap">
+<div class="info">🖱️ Drag to orbit · Scroll to zoom</div>
+<canvas id="c"></canvas>
+</div>
+<div id="ui">
+<h1>✨ DreamScene 3D</h1>
+<div class="prompt-row">
+<input id="prompt" placeholder="Describe a 3D scene..." value="floating crystal islands at sunset">
+<button id="gen" onclick="generate()">Build</button>
+</div>
+<div class="presets">
+<span onclick="preset(this)">🏙️ Neon City</span>
+<span onclick="preset(this)">🌌 Space Station</span>
+<span onclick="preset(this)">🌿 Forest Shrine</span>
+<span onclick="preset(this)">🔮 Crystal Cave</span>
+<span onclick="preset(this)">🌊 Ocean Depths</span>
+<span onclick="preset(this)">⛰️ Alien Planet</span>
+</div>
+<div id="status">Inspired by DreamTech — AI that thinks in true 3D</div>
+</div>
+<script>
+const canvas=document.getElementById('c'),W=()=>canvas.parentElement.clientWidth,H=()=>canvas.parentElement.clientHeight;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,W()/H(),0.1,500);
+camera.position.set(0,8,20);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setSize(W(),H());
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+
+// Lights
+const amb=new THREE.AmbientLight(0x334455,0.5);scene.add(amb);
+const dir=new THREE.DirectionalLight(0xffeedd,1);dir.position.set(5,10,5);scene.add(dir);
+const pt=new THREE.PointLight(0x7c5cfc,2,30);pt.position.set(0,5,0);scene.add(pt);
+
+// Orbit
+let isDrag=false,prev={x:0,y:0},rot={x:0,y:0.3};
+canvas.addEventListener('pointerdown',e=>{isDrag=true;prev={x:e.clientX,y:e.clientY}});
+window.addEventListener('pointerup',()=>isDrag=false);
+window.addEventListener('pointermove',e=>{if(!isDrag)return;rot.x+=(e.clientX-prev.x)*0.005;rot.y=Math.max(-1,Math.min(1,rot.y+(e.clientY-prev.y)*0.005));prev={x:e.clientX,y:e.clientY}});
+let dist=20;
+canvas.addEventListener('wheel',e=>{dist=Math.max(5,Math.min(50,dist+e.deltaY*0.03))});
+
+// Scene gen
+const palettes={
+'neon city':['#ff00ff','#00ffff','#ffff00','#ff4444','#4444ff'],
+'space station':['#88aacc','#446688','#aaccee','#ff6633','#33ff99'],
+'forest shrine':['#228833','#44bb44','#886633','#ddcc88','#66aa55'],
+'crystal cave':['#9944ff','#44ddff','#ff44aa','#44ffaa','#ffaa44'],
+'ocean depths':['#003366','#006699','#0099cc','#44ccff','#00ff88'],
+'alien planet':['#ff4400','#cc00ff','#00ff44','#ffcc00','#ff0066'],
+'floating crystal islands':['#9966ff','#ff6699','#ffcc33','#66ffcc','#ff3366'],
+'sunset':['#ff6633','#ff3366','#ffcc00','#9933ff','#ff9900'],
+'default':['#7c5cfc','#b44cfc','#fc5c8c','#5cfcbc','#fcbc5c']
+};
+
+function getColors(text){
+const t=text.toLowerCase();
+for(const[k,v]of Object.entries(palettes))if(t.includes(k))return v;
+return palettes.default;
+}
+
+let objs=[];
+function clearScene(){objs.forEach(o=>scene.remove(o));objs=[];}
+
+function rng(a,b){return a+Math.random()*(b-a)}
+function col(hex){return new THREE.Color(hex)}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+const geos=[
+()=>new THREE.IcosahedronGeometry(rng(.3,1.5),Math.floor(rng(0,3))),
+()=>new THREE.OctahedronGeometry(rng(.4,1.8),0),
+()=>new THREE.TorusGeometry(rng(.5,1.2),rng(.1,.4),8,24),
+()=>new THREE.BoxGeometry(rng(.5,2),rng(.5,3),rng(.5,2)),
+()=>new THREE.ConeGeometry(rng(.3,1.2),rng(.8,3),Math.floor(rng(3,8))),
+()=>new THREE.SphereGeometry(rng(.3,1.5),16,16),
+()=>new THREE.TorusKnotGeometry(rng(.4,.8),rng(.1,.3),64,8),
+()=>new THREE.DodecahedronGeometry(rng(.4,1.2),0),
+()=>new THREE.CylinderGeometry(rng(.1,.5),rng(.5,1.5),rng(1,4),8),
+];
+
+function generate(){
+clearScene();
+const text=document.getElementById('prompt').value;
+const colors=getColors(text);
+const count=Math.floor(rng(25,50));
+const hasFloat=text.toLowerCase().includes('float');
+const hasCity=text.toLowerCase().includes('city');
+const hasCave=text.toLowerCase().includes('cave');
+const hasOcean=text.toLowerCase().includes('ocean');
+
+// Ground
+if(!hasFloat){
+const gnd=new THREE.Mesh(new THREE.CircleGeometry(30,64),new THREE.MeshStandardMaterial({color:col(colors[0]).multiplyScalar(.2),metalness:.3,roughness:.8}));
+gnd.rotation.x=-Math.PI/2;gnd.position.y=-2;scene.add(gnd);objs.push(gnd);
+}
+
+// Fog
+scene.fog=new THREE.FogExp2(hasOcean?0x001122:hasCave?0x110022:0x0a0a0f,hasOcean?.04:.02);
+
+for(let i=0;i<count;i++){
+const geo=pick(geos)();
+const c=col(pick(colors));
+const mat=Math.random()>.5?
+new THREE.MeshStandardMaterial({color:c,metalness:rng(.1,.9),roughness:rng(.1,.6),emissive:c.clone().multiplyScalar(rng(0,.3))}):
+new THREE.MeshPhysicalMaterial({color:c,metalness:rng(.3,.9),roughness:rng(0,.3),clearcoat:1,clearcoatRoughness:.1,emissive:c.clone().multiplyScalar(rng(0,.2)),transparent:Math.random()>.7,opacity:rng(.5,1)});
+const mesh=new THREE.Mesh(geo,mat);
+
+if(hasCity){
+mesh.position.set(rng(-12,12),-2+rng(0,geo.parameters?.height||rng(1,6))/2,rng(-12,12));
+mesh.scale.y=rng(1,4);
+}else if(hasFloat){
+mesh.position.set(rng(-10,10),rng(-3,8),rng(-10,10));
+}else{
+mesh.position.set(rng(-12,12),rng(-1,6),rng(-12,12));
+}
+mesh.rotation.set(rng(0,Math.PI),rng(0,Math.PI),rng(0,Math.PI));
+mesh.userData={vy:rng(-.003,.003),vr:rng(-.005,.005),float:hasFloat,baseY:mesh.position.y,phase:rng(0,Math.PI*2)};
+scene.add(mesh);objs.push(mesh);
+}
+
+// Particles
+const pGeo=new THREE.BufferGeometry();
+const pCount=200;
+const positions=new Float32Array(pCount*3);
+for(let i=0;i<pCount*3;i++)positions[i]=rng(-15,15);
+pGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+const pMat=new THREE.PointsMaterial({color:col(pick(colors)),size:rng(.05,.15),transparent:true,opacity:.6});
+const pts=new THREE.Points(pGeo,pMat);
+scene.add(pts);objs.push(pts);
+
+pt.color=col(pick(colors));
+dir.color=col(pick(colors)).lerp(new THREE.Color(0xffffff),.5);
+
+document.getElementById('status').textContent='✨ Generated '+count+' objects — drag to explore';
+}
+
+function preset(el){document.getElementById('prompt').value=el.textContent.slice(3);generate();}
+
+let t=0;
+function animate(){
+requestAnimationFrame(animate);
+t+=0.01;
+camera.position.x=Math.sin(rot.x)*dist;
+camera.position.z=Math.cos(rot.x)*dist;
+camera.position.y=rot.y*15+5;
+camera.lookAt(0,2,0);
+objs.forEach(o=>{
+if(o.userData?.vr)o.rotation.y+=o.userData.vr;
+if(o.userData?.float)o.position.y=o.userData.baseY+Math.sin(t*2+o.userData.phase)*.5;
+});
+renderer.render(scene,camera);
+}
+animate();
+generate();
+
+window.addEventListener('resize',()=>{camera.aspect=W()/H();camera.updateProjectionMatrix();renderer.setSize(W(),H())});
+document.getElementById('prompt').addEventListener('keydown',e=>{if(e.key==='Enter')generate()});
+</script>
+</body>
+</html>
