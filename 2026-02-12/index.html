@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeedDance Director — AI Video Shot Planner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#13131f;--accent:#7c3aed;--accent2:#a855f7;--green:#10b981;--text:#e2e8f0;--muted:#64748b;--border:#1e1e2e;--glow:rgba(124,58,237,.25)}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.app{max-width:480px;margin:0 auto;padding:16px;padding-bottom:100px}
+header{text-align:center;padding:24px 0 16px}
+header h1{font-size:1.6rem;background:linear-gradient(135deg,var(--accent),#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+header p{color:var(--muted);font-size:.8rem;margin-top:4px}
+.badge{display:inline-block;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:99px;margin-bottom:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.section h2{font-size:.85rem;color:var(--accent2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;margin-top:10px}
+label:first-of-type{margin-top:0}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:.85rem;outline:none;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:.75rem;cursor:pointer;transition:all .2s;user-select:none}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#ec4899);color:#fff;box-shadow:0 4px 20px var(--glow)}
+.btn-primary:active{transform:scale(.97)}
+.btn-secondary{background:var(--card);border:1px solid var(--border);color:var(--text);margin-top:8px}
+.timeline{position:relative;margin-top:12px}
+.shot{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;position:relative;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.shot-num{position:absolute;top:-8px;left:12px;background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:99px}
+.shot h3{font-size:.8rem;margin-top:6px;color:var(--accent2)}
+.shot p{font-size:.75rem;color:var(--muted);margin-top:4px;line-height:1.5}
+.shot .prompt-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.72rem;color:var(--green);font-family:'Courier New',monospace;line-height:1.5;cursor:pointer;position:relative}
+.shot .prompt-box::after{content:'📋';position:absolute;top:6px;right:8px;font-size:.7rem;opacity:.5}
+.shot .meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.shot .tag{font-size:.6rem;background:var(--card);border:1px solid var(--border);padding:2px 8px;border-radius:99px;color:var(--muted)}
+.empty{text-align:center;padding:40px 0;color:var(--muted);font-size:.85rem}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.stat{text-align:center;background:var(--bg);border-radius:10px;padding:10px 6px}
+.stat .val{font-size:1.1rem;font-weight:800;color:var(--accent2)}
+.stat .lbl{font-size:.6rem;color:var(--muted);margin-top:2px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 20px;border-radius:99px;font-size:.8rem;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+.examples{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.examples::-webkit-scrollbar{display:none}
+.ex{flex-shrink:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:.7rem;cursor:pointer;transition:border .2s;max-width:160px}
+.ex:active{border-color:var(--accent)}
+.ex strong{color:var(--accent2);display:block;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="badge">🔥 TRENDING TODAY</div>
+    <h1>🎬 SeedDance Director</h1>
+    <p>Inspired by ByteDance's Seedance 2.0 — plan AI video shots like a pro director</p>
+  </header>
+
+  <div class="section">
+    <h2>💡 Quick Start</h2>
+    <div class="examples" id="examples"></div>
+  </div>
+
+  <div class="section">
+    <h2>🎯 Scene Setup</h2>
+    <label>Scene Description</label>
+    <textarea id="scene" placeholder="A lone astronaut walks through a neon-lit Tokyo street at midnight..."></textarea>
+    <label>Visual Style</label>
+    <div class="chips" id="styleChips"></div>
+    <label>Mood / Tone</label>
+    <div class="chips" id="moodChips"></div>
+    <label>Duration</label>
+    <select id="duration">
+      <option value="5">5 seconds (quick cut)</option>
+      <option value="10" selected>10 seconds (standard)</option>
+      <option value="15">15 seconds (extended)</option>
+      <option value="30">30 seconds (long take)</option>
+    </select>
+  </div>
+
+  <button class="btn btn-primary" onclick="generateShots()">🎬 Generate Shot List</button>
+  <button class="btn btn-secondary" onclick="addRandomScene()">🎲 Surprise Me</button>
+
+  <div class="section" style="margin-top:14px">
+    <h2>🎞️ Shot Timeline</h2>
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat"><div class="val" id="shotCount">0</div><div class="lbl">SHOTS</div></div>
+      <div class="stat"><div class="val" id="totalDur">0s</div><div class="lbl">DURATION</div></div>
+      <div class="stat"><div class="val" id="cutCount">0</div><div class="lbl">CUTS</div></div>
+    </div>
+    <div class="timeline" id="timeline">
+      <div class="empty">🎬 Your shot list will appear here</div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script>
+const styles=['Cinematic','Anime','Photorealistic','Noir','Cyberpunk','Watercolor','Vintage Film','Vaporwave','Studio Ghibli','Wes Anderson'];
+const moods=['Epic','Dreamy','Tense','Peaceful','Chaotic','Nostalgic','Mysterious','Joyful','Melancholic','Surreal'];
+const cameras=['Slow dolly forward','Orbital tracking shot','Crane up reveal','Handheld close-up','Steadicam follow','Drone ascending','Dutch angle pan','Whip pan transition','Rack focus pull','Tilt up reveal'];
+const lighting=['Golden hour backlight','Neon underglow','Volumetric fog beams','Harsh top light','Bioluminescent glow','Candlelight flicker','Moonlit rim light','LED strip accents','Silhouette against sunset','Dappled forest light'];
+const transitions=['Smash cut','Match dissolve','Morphing transition','Light leak wipe','Particle dispersion','Zoom punch','Glitch cut','Ink bleed','Seamless pan','Reverse reveal'];
+const examples=[
+{title:'🚀 Sci-Fi Trailer',scene:'A massive spaceship emerges from behind Jupiter, camera pushes through asteroid field toward a glowing portal'},
+{title:'🌸 Music Video',scene:'A dancer in flowing silk performs on a rooftop at sunset, petals swirling in slow motion around her'},
+{title:'🏙️ Product Ad',scene:'A sleek smartphone floats above a minimal white surface, holographic UI projecting outward as city lights reflect'},
+{title:'🐉 Fantasy Epic',scene:'A dragon breaks through storm clouds above a medieval castle, lightning illuminating its scales'},
+{title:'🎭 Short Film',scene:'An old man sits alone in a rain-soaked café, staring at an empty chair across from him, memories flickering like ghosts'}
+];
+let activeStyles=new Set(['Cinematic']),activeMoods=new Set(['Epic']),shots=[];
+function initChips(id,items,activeSet){const c=document.getElementById(id);items.forEach(i=>{const d=document.createElement('div');d.className='chip'+(activeSet.has(i)?' active':'');d.textContent=i;d.onclick=()=>{activeSet.has(i)?activeSet.delete(i):activeSet.add(i);d.classList.toggle('active')};c.appendChild(d)})}
+function initExamples(){const c=document.getElementById('examples');examples.forEach(e=>{const d=document.createElement('div');d.className='ex';d.innerHTML=`<strong>${e.title}</strong>${e.scene.slice(0,60)}…`;d.onclick=()=>{document.getElementById('scene').value=e.scene;generateShots()};c.appendChild(d)})}
+initChips('styleChips',styles,activeStyles);initChips('moodChips',moods,activeMoods);initExamples();
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function generateShots(){
+const scene=document.getElementById('scene').value.trim();
+if(!scene){toast('Write a scene first!');return}
+const dur=parseInt(document.getElementById('duration').value);
+const sty=[...activeStyles].join(', ')||'Cinematic';
+const mood=[...activeMoods].join(', ')||'Epic';
+const numShots=dur<=5?2:dur<=10?4:dur<=15?6:8;
+shots=[];
+const shotDur=Math.round(dur/numShots*10)/10;
+for(let i=0;i<numShots;i++){
+const cam=pick(cameras);const light=pick(lighting);const trans=i<numShots-1?pick(transitions):'Fade to black';
+const descriptions=[
+`Open on the scene — ${cam.toLowerCase()} establishing the world. ${light}.`,
+`Push deeper into the action. ${cam}. The ${mood.toLowerCase()} energy builds as ${light.toLowerCase()} shifts.`,
+`Key moment — ${cam.toLowerCase()} captures the emotional peak. ${light}.`,
+`Shift perspective. ${cam} reveals new detail. Atmosphere thickens with ${light.toLowerCase()}.`,
+`Rhythmic intercut — rapid ${cam.toLowerCase()} fragments. ${light}. Tension mounts.`,
+`Breathing room. Slow ${cam.toLowerCase()} gives us space. ${light} paints the frame.`,
+`Climactic reveal — ${cam}. Everything converges. ${light}.`,
+`Final frame. ${cam.toLowerCase()} holds as the moment lands. ${light}. ${trans}.`
+];
+const prompt=`[${sty}] [${mood}] ${scene}. Camera: ${cam}. Lighting: ${light}. Duration: ${shotDur}s. ${i<numShots-1?'Transition: '+trans+'.':''}`;
+shots.push({num:i+1,title:`Shot ${i+1} — ${cam.split(' ').slice(0,2).join(' ')}`,desc:descriptions[i%descriptions.length],prompt,camera:cam,light,transition:trans,duration:shotDur})
+}
+renderTimeline();
+}
+function renderTimeline(){
+const tl=document.getElementById('timeline');const st=document.getElementById('stats');
+st.style.display='grid';
+document.getElementById('shotCount').textContent=shots.length;
+document.getElementById('totalDur').textContent=shots.reduce((a,s)=>a+s.duration,0)+'s';
+document.getElementById('cutCount').textContent=Math.max(0,shots.length-1);
+tl.innerHTML=shots.map(s=>`
+<div class="shot">
+<div class="shot-num">SHOT ${s.num}</div>
+<h3>${s.title}</h3>
+<p>${s.desc}</p>
+<div class="prompt-box" onclick="copyPrompt(this)">${s.prompt}</div>
+<div class="meta">
+<span class="tag">📷 ${s.camera}</span>
+<span class="tag">💡 ${s.light}</span>
+<span class="tag">⏱️ ${s.duration}s</span>
+<span class="tag">✂️ ${s.transition}</span>
+</div>
+</div>`).join('');
+}
+function copyPrompt(el){navigator.clipboard.writeText(el.textContent).then(()=>toast('Prompt copied!')).catch(()=>toast('Tap & hold to copy'))}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
+function addRandomScene(){
+const scenes=['A samurai stands in a field of red spider lilies as cherry blossoms fall in slow motion, katana reflecting the setting sun','A deep-sea submersible descends past bioluminescent jellyfish, ancient ruins glowing faintly on the ocean floor','A street food vendor in Bangkok creates a flaming wok dish at night, sparks and steam dancing under neon signs','A child discovers a hidden door in an old library that opens into a vast floating city above the clouds','A Formula 1 car tears through rain at Monaco, water trails catching every color of the harbor lights'];
+document.getElementById('scene').value=pick(scenes);generateShots();
+}
+</script>
+</body>
+</html>

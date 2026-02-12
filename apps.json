@@ -8,5 +8,6 @@
   {"date": "2026-02-08", "name": "AI Data Harvester", "trend": "Cybersecurity experts warn the viral AI caricature trend exposes users to mass biometric data harvesting — your selfie reveals 150+ data points", "tag": "Privacy/Education", "path": "2026-02-08/index.html"},
   {"date": "2026-02-09", "name": "Exposé Generator", "trend": "The 'ChatGPT exposes you' trend hits peak virality — people share AI-generated personality roasts and exaggerated caricature 'exposés'", "tag": "Personality/Fun", "path": "2026-02-09/index.html"},
   {"date": "2026-02-10", "name": "Human or AI?", "trend": "MIT investigation reveals Moltbook's viral 'AI agent' posts were actually human-written — sparking debates about AI detection and authenticity", "tag": "Detection/Game", "path": "2026-02-10/index.html"},
-  {"date": "2026-02-11", "name": "DreamScene 3D", "trend": "DreamTech teaches AI to think in true 3D geometry instead of faking depth with 2D tricks — a breakthrough in spatial AI reasoning", "tag": "3D/Generative", "path": "2026-02-11/index.html"}
+  {"date": "2026-02-11", "name": "DreamScene 3D", "trend": "DreamTech teaches AI to think in true 3D geometry instead of faking depth with 2D tricks — a breakthrough in spatial AI reasoning", "tag": "3D/Generative", "path": "2026-02-11/index.html"},
+  {"date": "2026-02-12", "name": "SeedDance Director", "trend": "ByteDance's Seedance 2.0 AI video model goes viral — generates cinema-quality video from text, Elon Musk says 'it's happening fast'", "tag": "Video/Creative", "path": "2026-02-12/index.html"}
 ]
