@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Job Impact Calculator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#13131f;--border:#1e1e35;--accent:#6366f1;--accent2:#ec4899;--text:#e2e8f0;--muted:#64748b;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--orange:#f97316}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;text-align:center;margin:20px 0 4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:var(--muted);font-size:.8rem;margin-bottom:24px}
+.subtitle a{color:var(--accent);text-decoration:none}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.search-wrap{position:relative}
+.search-wrap input{width:100%;padding:14px 16px;background:#0d0d18;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1rem;outline:none;transition:border .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap input::placeholder{color:var(--muted)}
+.categories{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.cat-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.75rem;cursor:pointer;transition:all .2s}
+.cat-btn:hover,.cat-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(99,102,241,.1)}
+.job-list{max-height:200px;overflow-y:auto;margin-top:12px;display:none}
+.job-item{padding:10px 14px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .15s;font-size:.9rem}
+.job-item:hover{background:rgba(99,102,241,.1)}
+.job-item .risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.result{display:none;animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.risk-meter{height:8px;border-radius:4px;background:#1a1a2e;margin:16px 0 8px;overflow:hidden}
+.risk-fill{height:100%;border-radius:4px;transition:width 1s ease,background 1s ease}
+.risk-label{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+.score-big{font-size:3rem;font-weight:800;text-align:center;margin:8px 0}
+.score-subtitle{text-align:center;font-size:.85rem;color:var(--muted);margin-bottom:16px}
+.factors{display:grid;gap:8px}
+.factor{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#0d0d18;border-radius:8px;font-size:.85rem}
+.factor-bar{width:60px;height:6px;border-radius:3px;background:#1a1a2e;overflow:hidden;flex-shrink:0;margin-left:12px}
+.factor-bar-fill{height:100%;border-radius:3px}
+.advice{margin-top:16px;padding:14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:.85rem;line-height:1.5}
+.advice strong{color:var(--accent)}
+.timeline{margin-top:16px}
+.timeline h3{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+.tl-bar{display:flex;gap:2px;height:32px;border-radius:6px;overflow:hidden}
+.tl-seg{display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:#000;transition:all .3s}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--accent);background:none;border:none;cursor:pointer;font-size:.85rem;margin-bottom:12px}
+.source{text-align:center;margin-top:20px;font-size:.7rem;color:var(--muted)}
+.source a{color:var(--accent)}
+.compare-btn{display:block;width:100%;padding:12px;margin-top:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer;transition:opacity .2s}
+.compare-btn:hover{opacity:.9}
+.compare-list{margin-top:12px;display:none}
+.compare-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:.85rem}
+.compare-item:last-child{border:none}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🤖 Will AI Replace Your Job?</h1>
+<p class="subtitle">Inspired by <a href="https://nymag.com/intelligencer/article/viral-ai-post-anthropic-chatgpt.html" target="_blank">Matt Shumer's viral essay</a> — "Something Big Is Happening"</p>
+
+<div class="card" id="searchCard">
+<div class="search-wrap">
+<input type="text" id="searchInput" placeholder="Search your job title..." autocomplete="off">
+</div>
+<div class="categories" id="cats"></div>
+<div class="job-list" id="jobList"></div>
+</div>
+
+<div class="result" id="result">
+<button class="back-btn" onclick="goBack()">← Try another job</button>
+<div class="card">
+<div class="score-big" id="scoreNum"></div>
+<div class="score-subtitle" id="scoreLabel"></div>
+<div class="risk-meter"><div class="risk-fill" id="riskFill"></div></div>
+<div class="risk-label"><span>Low Risk</span><span>High Risk</span></div>
+</div>
+<div class="card">
+<h3 style="font-size:.9rem;margin-bottom:12px">Risk Factors</h3>
+<div class="factors" id="factors"></div>
+</div>
+<div class="card">
+<div class="timeline">
+<h3>AI Impact Timeline</h3>
+<div class="tl-bar" id="timeline"></div>
+<div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-top:4px"><span>Now</span><span>2028</span><span>2030</span><span>2035</span></div>
+</div>
+</div>
+<div class="card">
+<div class="advice" id="advice"></div>
+</div>
+<button class="compare-btn" onclick="toggleCompare()">📊 Compare with Similar Jobs</button>
+<div class="compare-list" id="compareList"></div>
+</div>
+
+<div class="source">Data is illustrative, not predictive. Built by <a href="https://github.com/Johnsonbros/daily-ai-trends">ZEKE</a> 🗝️</div>
+</div>
+
+<script>
+const JOBS=[
+// Tech
+{t:"Software Developer",c:"Tech",risk:62,f:{repetitive:40,creative:70,physical:5,social:30,analytical:90},adv:"AI coding tools (Copilot, Cursor, Codex) handle boilerplate but <strong>system design, architecture, and debugging complex systems</strong> still need human judgment. Shift toward AI-augmented development — fewer devs doing more.",tl:[20,30,30,20],sim:["Data Analyst","UX Designer","DevOps Engineer"]},
+{t:"Data Analyst",c:"Tech",risk:74,f:{repetitive:70,creative:30,physical:5,social:25,analytical:95},adv:"Routine analysis is already automated. <strong>Shift to storytelling with data</strong> — the insight, not the query. Learn to prompt AI models and validate their outputs critically.",tl:[35,30,25,10],sim:["Software Developer","Accountant","Financial Analyst"]},
+{t:"UX Designer",c:"Tech",risk:48,f:{repetitive:30,creative:85,physical:5,social:60,analytical:50},adv:"AI generates mockups fast but <strong>empathy, user research, and design thinking</strong> remain deeply human. Focus on strategy and research, let AI handle wireframes.",tl:[10,20,35,35],sim:["Graphic Designer","Product Manager","Web Developer"]},
+{t:"DevOps Engineer",c:"Tech",risk:55,f:{repetitive:50,creative:40,physical:5,social:30,analytical:85},adv:"Infrastructure-as-code and AI ops tools automate deployments. <strong>Reliability engineering and incident response</strong> still need human judgment. Learn AI-assisted monitoring.",tl:[15,25,35,25],sim:["Software Developer","System Admin","Cloud Architect"]},
+{t:"Cybersecurity Analyst",c:"Tech",risk:35,f:{repetitive:30,creative:60,physical:5,social:40,analytical:90},adv:"AI creates new attack vectors as fast as it patches old ones. <strong>Adversarial thinking and incident response</strong> are deeply human. One of the safest tech roles.",tl:[5,15,30,50],sim:["DevOps Engineer","Software Developer","Forensic Analyst"]},
+// Creative
+{t:"Graphic Designer",c:"Creative",risk:65,f:{repetitive:40,creative:90,physical:5,social:45,analytical:30},adv:"AI generates visuals instantly. <strong>Brand strategy, art direction, and taste</strong> are the moat. Become the person who curates and directs AI output.",tl:[25,30,30,15],sim:["UX Designer","Photographer","Marketing Manager"]},
+{t:"Copywriter",c:"Creative",risk:78,f:{repetitive:60,creative:75,physical:5,social:35,analytical:40},adv:"AI writes decent copy now. <strong>Voice, brand intuition, and emotional resonance</strong> differentiate. Pivot to content strategy and AI-assisted editing.",tl:[40,30,20,10],sim:["Journalist","Marketing Manager","Social Media Manager"]},
+{t:"Photographer",c:"Creative",risk:42,f:{repetitive:20,creative:85,physical:40,social:55,analytical:20},adv:"AI generates images but <strong>real moments, real people, real light</strong> can't be faked. Events, portraits, and documentary work are safe. Stock photography is not.",tl:[10,15,30,45],sim:["Videographer","Graphic Designer","Event Planner"]},
+{t:"Musician/Composer",c:"Creative",risk:50,f:{repetitive:25,creative:95,physical:20,social:50,analytical:30},adv:"AI generates background music easily. <strong>Live performance, emotional depth, and cultural context</strong> remain human. Collaborate with AI tools, don't compete.",tl:[15,20,30,35],sim:["Voice Actor","Photographer","Film Director"]},
+// Business
+{t:"Accountant",c:"Business",risk:82,f:{repetitive:80,creative:15,physical:5,social:30,analytical:85},adv:"Bookkeeping and tax prep are already being automated. <strong>Advisory, complex tax strategy, and client relationships</strong> survive. Move up the value chain fast.",tl:[40,35,20,5],sim:["Financial Analyst","Data Analyst","Auditor"]},
+{t:"Financial Analyst",c:"Business",risk:70,f:{repetitive:55,creative:30,physical:5,social:35,analytical:90},adv:"AI crunches numbers faster. <strong>Market intuition, relationship-driven deals, and narrative framing</strong> remain human. Focus on the story behind the data.",tl:[30,30,25,15],sim:["Accountant","Data Analyst","Management Consultant"]},
+{t:"Marketing Manager",c:"Business",risk:52,f:{repetitive:35,creative:70,physical:10,social:75,analytical:50},adv:"AI handles content generation and analytics. <strong>Strategy, brand building, and human psychology</strong> are the moat. Become the AI-whisperer of your team.",tl:[15,20,35,30],sim:["Copywriter","Product Manager","Sales Manager"]},
+{t:"Management Consultant",c:"Business",risk:58,f:{repetitive:40,creative:50,physical:10,social:80,analytical:75},adv:"AI can analyze and recommend. <strong>Client trust, org politics, and change management</strong> are deeply human. The junior analyst work vanishes first.",tl:[20,25,30,25],sim:["Financial Analyst","Product Manager","Lawyer"]},
+{t:"Product Manager",c:"Business",risk:40,f:{repetitive:25,creative:65,physical:5,social:85,analytical:60},adv:"AI can research and write specs. <strong>Vision, stakeholder alignment, and prioritization under ambiguity</strong> are safe. One of the most AI-resilient business roles.",tl:[8,15,32,45],sim:["Marketing Manager","UX Designer","Management Consultant"]},
+// Healthcare
+{t:"Radiologist",c:"Healthcare",risk:68,f:{repetitive:65,creative:20,physical:10,social:30,analytical:90},adv:"AI matches radiologist accuracy on many scans. <strong>Complex cases, patient context, and liability</strong> keep humans in the loop. Expect AI-assisted, not AI-replaced.",tl:[25,30,30,15],sim:["Lab Technician","Pathologist","Data Analyst"]},
+{t:"Nurse",c:"Healthcare",risk:18,f:{repetitive:30,creative:25,physical:80,social:90,analytical:40},adv:"<strong>Physical care, patient comfort, and clinical judgment</strong> are irreplaceable. AI assists with charting and monitoring. One of the safest careers from AI disruption.",tl:[3,5,10,82],sim:["Physical Therapist","Paramedic","Social Worker"]},
+{t:"Therapist/Counselor",c:"Healthcare",risk:25,f:{repetitive:20,creative:50,physical:10,social:95,analytical:40},adv:"AI chatbots handle basic CBT exercises. <strong>Deep empathy, trust, and nuanced human connection</strong> are irreplaceable. AI becomes a tool, not a replacement.",tl:[5,8,15,72],sim:["Social Worker","Nurse","Teacher"]},
+// Legal
+{t:"Lawyer",c:"Legal",risk:55,f:{repetitive:45,creative:50,physical:5,social:70,analytical:85},adv:"AI handles document review, research, and drafting. <strong>Courtroom advocacy, negotiation, and judgment calls</strong> stay human. Paralegals and junior associates most at risk.",tl:[20,25,30,25],sim:["Paralegal","Management Consultant","Accountant"]},
+{t:"Paralegal",c:"Legal",risk:80,f:{repetitive:75,creative:15,physical:5,social:30,analytical:70},adv:"Document review and legal research are prime AI targets. <strong>Specialize in complex litigation support or pivot to legal tech</strong>. The generalist paralegal role is shrinking.",tl:[35,35,20,10],sim:["Lawyer","Accountant","Administrative Assistant"]},
+// Education
+{t:"Teacher (K-12)",c:"Education",risk:22,f:{repetitive:35,creative:55,physical:30,social:90,analytical:40},adv:"AI tutors help with facts. <strong>Inspiration, mentorship, classroom management, and social development</strong> are human. AI becomes your teaching assistant.",tl:[4,8,15,73],sim:["Therapist/Counselor","Nurse","Social Worker"]},
+// Trades
+{t:"Electrician",c:"Trades",risk:12,f:{repetitive:25,creative:35,physical:90,social:40,analytical:50},adv:"<strong>Physical dexterity, problem-solving in unpredictable environments, and code compliance</strong> are very hard to automate. One of the safest career choices.",tl:[2,3,8,87],sim:["Plumber","HVAC Technician","Carpenter"]},
+{t:"Plumber",c:"Trades",risk:10,f:{repetitive:20,creative:30,physical:95,social:45,analytical:40},adv:"Every job is different. <strong>Crawl spaces, old houses, and water physics</strong> laugh at robots. AI helps with scheduling and diagnostics, not the wrench.",tl:[1,2,7,90],sim:["Electrician","HVAC Technician","Carpenter"]},
+{t:"HVAC Technician",c:"Trades",risk:14,f:{repetitive:30,creative:30,physical:85,social:40,analytical:55},adv:"<strong>Physical installation and repair in varied environments</strong> resist automation. AI-powered diagnostics will be a tool, not a replacement.",tl:[2,4,10,84],sim:["Electrician","Plumber","Carpenter"]},
+// Service
+{t:"Real Estate Agent",c:"Service",risk:60,f:{repetitive:40,creative:40,physical:20,social:85,analytical:40},adv:"AI handles listings, market analysis, and virtual tours. <strong>Trust, negotiation, and local knowledge</strong> keep agents relevant — but with smaller commissions.",tl:[20,25,30,25],sim:["Sales Manager","Marketing Manager","Insurance Agent"]},
+{t:"Administrative Assistant",c:"Service",risk:85,f:{repetitive:85,creative:10,physical:10,social:40,analytical:30},adv:"Scheduling, email, and data entry are prime automation targets. <strong>Become an AI-powered executive assistant</strong> — manage the tools, not the tasks.",tl:[45,30,20,5],sim:["Paralegal","Bookkeeper","Customer Service Rep"]},
+{t:"Customer Service Rep",c:"Service",risk:88,f:{repetitive:80,creative:10,physical:5,social:60,analytical:20},adv:"Chatbots handle 80% of queries already. <strong>Complex escalations and emotional situations</strong> need humans. Specialize in high-stakes support or pivot.",tl:[50,30,15,5],sim:["Administrative Assistant","Sales Associate","Call Center Manager"]},
+{t:"Sales Manager",c:"Service",risk:38,f:{repetitive:30,creative:50,physical:15,social:90,analytical:45},adv:"AI qualifies leads and writes emails. <strong>Relationship building, team leadership, and deal instinct</strong> are deeply human. AI makes good salespeople great.",tl:[8,12,30,50],sim:["Marketing Manager","Real Estate Agent","Product Manager"]},
+{t:"Truck Driver",c:"Service",risk:55,f:{repetitive:70,creative:5,physical:50,social:15,analytical:20},adv:"Autonomous trucks are coming but <strong>last-mile, loading/unloading, and non-highway driving</strong> extend the timeline. Regulation adds years. Transition window exists.",tl:[10,25,35,30],sim:["Delivery Driver","Warehouse Worker","Machine Operator"]},
+];
+
+const CATS=[...new Set(JOBS.map(j=>j.c))];
+const catsEl=document.getElementById('cats');
+const listEl=document.getElementById('jobList');
+const input=document.getElementById('searchInput');
+const resultEl=document.getElementById('result');
+const searchCard=document.getElementById('searchCard');
+
+CATS.forEach(c=>{const b=document.createElement('button');b.className='cat-btn';b.textContent=c;b.onclick=()=>{document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');filterJobs('',c)};catsEl.appendChild(b)});
+
+function riskColor(r){return r>=75?'var(--red)':r>=55?'var(--orange)':r>=35?'var(--yellow)':'var(--green)'}
+function riskWord(r){return r>=75?'High Risk':r>=55?'Moderate-High':r>=35?'Moderate':'Low Risk'}
+
+function filterJobs(q,cat){
+let f=JOBS;
+if(cat)f=f.filter(j=>j.c===cat);
+if(q)f=f.filter(j=>j.t.toLowerCase().includes(q.toLowerCase()));
+if(!f.length){listEl.style.display='none';return}
+listEl.style.display='block';
+listEl.innerHTML=f.map(j=>`<div class="job-item" onclick="showResult('${j.t}')"><span>${j.t}</span><span class="risk-dot" style="background:${riskColor(j.risk)}"></span></div>`).join('');
+}
+
+input.addEventListener('input',e=>{document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('active'));filterJobs(e.target.value,'')});
+input.addEventListener('focus',()=>{if(!input.value)filterJobs('','')});
+
+function showResult(title){
+const j=JOBS.find(x=>x.t===title);if(!j)return;
+searchCard.style.display='none';
+resultEl.style.display='block';
+document.getElementById('scoreNum').textContent=j.risk+'%';
+document.getElementById('scoreNum').style.color=riskColor(j.risk);
+document.getElementById('scoreLabel').textContent=riskWord(j.risk)+' of AI Disruption';
+const fill=document.getElementById('riskFill');
+fill.style.width=j.risk+'%';fill.style.background=riskColor(j.risk);
+const facEl=document.getElementById('factors');
+facEl.innerHTML='';
+const facLabels={repetitive:'Repetitive Tasks',creative:'Creative Demand',physical:'Physical Work',social:'Social/Emotional',analytical:'Analytical Depth'};
+Object.entries(j.f).forEach(([k,v])=>{
+const isProtective=k==='creative'||k==='physical'||k==='social';
+const color=isProtective?(v>60?'var(--green)':v>30?'var(--yellow)':'var(--red)'):(v>60?'var(--red)':v>30?'var(--yellow)':'var(--green)');
+facEl.innerHTML+=`<div class="factor"><span>${facLabels[k]}</span><div style="display:flex;align-items:center;gap:8px"><span style="color:${color};font-weight:600;font-size:.8rem">${v}%</span><div class="factor-bar"><div class="factor-bar-fill" style="width:${v}%;background:${color}"></div></div></div></div>`;
+});
+const tlEl=document.getElementById('timeline');
+const tlColors=['var(--green)','var(--yellow)','var(--orange)','var(--red)'];
+const tlLabels=['Safe','Shifting','Disrupted','Transformed'];
+tlEl.innerHTML=j.tl.map((p,i)=>p>5?`<div class="tl-seg" style="flex:${p};background:${tlColors[i]}">${tlLabels[i]}</div>`:'').join('');
+document.getElementById('advice').innerHTML='💡 '+j.adv;
+// Compare
+const cList=document.getElementById('compareList');
+const sims=j.sim.map(s=>JOBS.find(x=>x.t===s)).filter(Boolean);
+cList.innerHTML=sims.map(s=>`<div class="compare-item"><span style="cursor:pointer" onclick="goBack();setTimeout(()=>showResult('${s.t}'),100)">${s.t}</span><span class="tag" style="background:${riskColor(s.risk)}20;color:${riskColor(s.risk)}">${s.risk}%</span></div>`).join('');
+cList.style.display='none';
+window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goBack(){searchCard.style.display='block';resultEl.style.display='none';input.value='';listEl.style.display='none';document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('active'))}
+function toggleCompare(){const c=document.getElementById('compareList');c.style.display=c.style.display==='none'?'block':'none'}
+</script>
+</body>
+</html>
