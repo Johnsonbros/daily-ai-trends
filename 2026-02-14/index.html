@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💝 AI Valentine — Generate Love Letters with AI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Georgia',serif;background:#0a0008;color:#f0e6f6;min-height:100vh;overflow-x:hidden}
+.hearts-bg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.floating-heart{position:absolute;color:rgba(255,50,100,0.15);animation:floatUp linear infinite;font-size:24px}
+@keyframes floatUp{0%{transform:translateY(100vh) rotate(0deg);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) rotate(360deg);opacity:0}}
+.container{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:20px}
+header{text-align:center;padding:30px 0 20px}
+header h1{font-size:2.4em;background:linear-gradient(135deg,#ff6b9d,#c44dff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s ease infinite;background-size:200%}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+header p{color:#b088c0;margin-top:8px;font-size:0.95em;font-style:italic}
+.card{background:rgba(30,10,40,0.8);border:1px solid rgba(200,100,255,0.2);border-radius:16px;padding:24px;margin:16px 0;backdrop-filter:blur(10px)}
+.card h2{font-size:1.1em;color:#e090d0;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+label{display:block;color:#c8a0d8;font-size:0.85em;margin-bottom:6px;margin-top:14px}
+input,select,textarea{width:100%;padding:12px;background:rgba(60,20,80,0.6);border:1px solid rgba(200,100,255,0.3);border-radius:10px;color:#f0e6f6;font-family:inherit;font-size:0.95em;outline:none;transition:border-color 0.3s}
+input:focus,select:focus,textarea:focus{border-color:#c44dff}
+textarea{resize:vertical;min-height:80px}
+select{appearance:none;cursor:pointer}
+.style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.style-btn{padding:10px 6px;background:rgba(60,20,80,0.6);border:1px solid rgba(200,100,255,0.2);border-radius:10px;color:#c8a0d8;font-size:0.8em;cursor:pointer;text-align:center;transition:all 0.3s}
+.style-btn:hover{border-color:#c44dff;color:#fff}
+.style-btn.active{background:rgba(196,77,255,0.3);border-color:#c44dff;color:#fff}
+.generate-btn{width:100%;padding:16px;background:linear-gradient(135deg,#c44dff,#ff6b9d);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:1.1em;font-weight:bold;cursor:pointer;margin-top:20px;transition:transform 0.2s,box-shadow 0.2s;letter-spacing:0.5px}
+.generate-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(196,77,255,0.4)}
+.generate-btn:active{transform:scale(0.98)}
+.generate-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.output-card{background:linear-gradient(145deg,rgba(40,10,50,0.9),rgba(20,5,30,0.95));border:1px solid rgba(255,107,157,0.3);border-radius:16px;padding:28px;margin:20px 0;display:none;animation:fadeIn 0.6s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.output-card .letter{font-size:1.05em;line-height:1.7;color:#f0e6f6;white-space:pre-wrap}
+.output-card .letter .cursor{display:inline-block;width:2px;height:1.1em;background:#c44dff;animation:blink 0.8s infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.actions button{flex:1;min-width:120px;padding:10px;background:rgba(60,20,80,0.6);border:1px solid rgba(200,100,255,0.3);border-radius:10px;color:#e090d0;font-family:inherit;font-size:0.85em;cursor:pointer;transition:all 0.3s}
+.actions button:hover{background:rgba(196,77,255,0.3);color:#fff}
+.envelope{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;background:rgba(10,0,8,0.95);justify-content:center;align-items:center;flex-direction:column}
+.envelope.show{display:flex;animation:fadeIn 0.4s ease}
+.envelope-card{background:linear-gradient(145deg,#2a0a35,#1a0520);border:2px solid rgba(255,107,157,0.4);border-radius:20px;padding:36px 28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(196,77,255,0.2)}
+.envelope-card .close{position:absolute;top:12px;right:16px;background:none;border:none;color:#b088c0;font-size:1.5em;cursor:pointer}
+.envelope-card h3{text-align:center;font-size:1.3em;color:#ff6b9d;margin-bottom:20px}
+.envelope-card .letter-final{font-size:1em;line-height:1.8;color:#f0e6f6;white-space:pre-wrap}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(196,77,255,0.9);color:#fff;padding:12px 24px;border-radius:20px;font-size:0.9em;z-index:200;animation:toastIn 0.3s ease,toastOut 0.3s ease 2s forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(-50%) translateY(20px)}}
+.tag{display:inline-block;padding:2px 8px;background:rgba(196,77,255,0.2);border-radius:6px;font-size:0.75em;color:#c8a0d8;margin-left:auto}
+footer{text-align:center;padding:30px 0;color:#5a3070;font-size:0.8em}
+footer a{color:#8060a0}
+</style>
+</head>
+<body>
+<div class="hearts-bg" id="heartsBg"></div>
+<div class="container">
+<header>
+<h1>💝 AI Valentine</h1>
+<p>Generate heartfelt love letters powered by language magic</p>
+</header>
+
+<div class="card">
+<h2>💌 Compose Your Letter</h2>
+<label>Their Name</label>
+<input type="text" id="recipientName" placeholder="e.g. Alex, My Love, Babe...">
+<label>Your Name</label>
+<input type="text" id="senderName" placeholder="e.g. Your Secret Admirer">
+<label>What do you love about them?</label>
+<textarea id="details" placeholder="Their laugh, the way they look at you, inside jokes, memories together..."></textarea>
+<label>Tone & Style</label>
+<div class="style-grid">
+<button class="style-btn active" data-style="romantic">🌹 Romantic</button>
+<button class="style-btn" data-style="poetic">✨ Poetic</button>
+<button class="style-btn" data-style="funny">😂 Funny</button>
+<button class="style-btn" data-style="shakespeare">🎭 Shakespeare</button>
+<button class="style-btn" data-style="hiphop">🎤 Hip-Hop</button>
+<button class="style-btn" data-style="nerdy">🤓 Nerdy</button>
+</div>
+<button class="generate-btn" id="generateBtn" onclick="generateLetter()">💝 Generate Love Letter</button>
+</div>
+
+<div class="output-card" id="outputCard">
+<div class="letter" id="letterOutput"></div>
+<div class="actions">
+<button onclick="copyLetter()">📋 Copy</button>
+<button onclick="openEnvelope()">💌 View Card</button>
+<button onclick="generateLetter()">🔄 Regenerate</button>
+</div>
+</div>
+
+<div class="envelope" id="envelope">
+<div class="envelope-card">
+<button class="close" onclick="closeEnvelope()">✕</button>
+<h3>💌 A Letter For You</h3>
+<div class="letter-final" id="envelopeLetter"></div>
+</div>
+</div>
+
+<footer>
+<p>AI Valentine — Feb 14, 2026 | Part of <a href="https://github.com/Johnsonbros/daily-ai-trends">Daily AI Trends</a></p>
+</footer>
+</div>
+
+<script>
+// Floating hearts
+const bg=document.getElementById('heartsBg');
+const hearts=['💕','💗','💖','❤️','💘','💝','🌹','✨'];
+function spawnHeart(){const h=document.createElement('div');h.className='floating-heart';h.textContent=hearts[Math.floor(Math.random()*hearts.length)];h.style.left=Math.random()*100+'%';h.style.fontSize=(16+Math.random()*20)+'px';h.style.animationDuration=(8+Math.random()*12)+'s';h.style.animationDelay=Math.random()*2+'s';bg.appendChild(h);h.addEventListener('animationend',()=>h.remove())}
+setInterval(spawnHeart,800);for(let i=0;i<10;i++)setTimeout(spawnHeart,i*200);
+
+// Style selection
+let selectedStyle='romantic';
+document.querySelectorAll('.style-btn').forEach(btn=>{
+btn.addEventListener('click',()=>{
+document.querySelectorAll('.style-btn').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+selectedStyle=btn.dataset.style;
+})});
+
+// Letter templates
+const templates={
+romantic:[
+`Dearest {to},\n\nEvery moment with you feels like the universe conspired to bring us together. {details}\n\nYou are my first thought in the morning and my last wish at night. In a world of billions, my heart chose you — and it was the easiest choice it ever made.\n\nI love you more than words could ever capture, but I'll spend forever trying.\n\nAll my love,\n{from} 💕`,
+`My Beloved {to},\n\nIf I could bottle the way you make me feel, I'd have the most intoxicating perfume in existence. {details}\n\nYou are the missing piece I never knew I needed, and now that I've found you, I can't imagine a single day without your light.\n\nHappy Valentine's Day, my love. Today and always.\n\nForever yours,\n{from} 🌹`,
+`{to},\n\nThey say love is blind, but loving you has opened my eyes to everything beautiful in this world. {details}\n\nYou make ordinary moments feel extraordinary. A simple Tuesday with you is worth more than any grand adventure without you.\n\nI choose you. Today, tomorrow, and every day after that.\n\nWith all my heart,\n{from} ❤️`
+],
+poetic:[
+`{to},\n\nYou are the poem I've been trying to write,\nthe melody that plays in starless night,\nthe dawn that breaks through winter's frost,\nthe treasure found when hope seemed lost.\n\n{details}\n\nIn you I've found the universe distilled —\nevery dream I've dreamed, fulfilled.\n\nEternally,\n{from} ✨`,
+`To {to}, My Muse,\n\nLike constellations mapped across the sky,\nour story writes itself — you and I.\nEach glance a verse, each touch a rhyme,\na love that bends the rules of time.\n\n{details}\n\nYou are the ink, the page, the light —\nthe reason every word feels right.\n\nYours in verse and truth,\n{from} 🌙`
+],
+funny:[
+`Dear {to},\n\nI love you more than pizza. And honestly? That's saying A LOT.\n\n{details}\n\nYou're the only person whose morning breath I can tolerate. You're the WiFi to my phone — without you, I just wander around aimlessly refreshing everything.\n\nSo yeah, you're stuck with me. I checked the return policy and apparently there isn't one.\n\nHappy Valentine's Day, you absolute catch.\n\n— {from} 🍕❤️`,
+`{to},\n\nRoses are red,\nViolets are blue,\nI wrote this with AI,\nBut my love is true.\n\n{details}\n\nYou're basically my emotional support human. I'd share my last chicken nugget with you, and THAT is peak romance.\n\nLove you more than sleep (and that's my love language),\n{from} 😂💝`
+],
+shakespeare:[
+`My Dearest {to},\n\nShall I compare thee to a summer's day? Nay — for thou art far more temperate and eternal in thy radiance. The sun doth pale beside thy luminous countenance.\n\n{details}\n\nNeither time's cruel hand nor fortune's fickle wheel shall diminish what mine heart doth feel. For in thy presence, I have found what poets seek and philosophers ponder — a love most pure and true.\n\nThine, in perpetuity,\n{from} 🎭🌹`,
+`Beloved {to},\n\nWhat light through yonder window breaks? 'Tis not the sun — 'tis thee, whose beauty maketh dawn itself seem tardy.\n\n{details}\n\nWere all the world a stage, I'd play but one role evermore — thy devoted lover, constant as the northern star.\n\nWith love that knoweth no season's end,\n{from} ⚔️❤️`
+],
+hiphop:[
+`Yo {to},\n\nLet me spit some real talk this Valentine's —\nYou're the beat drop in my life, the hook in every line.\nBefore you, my days were just bars without a flow,\nNow every moment's platinum, watch our love just grow.\n\n{details}\n\nYou're my ride or die, my day one, my crown,\nThe only one who lifts me up when the world tries to bring me down.\nSo here's my Valentine's verse, straight from the heart —\nWe started as a feature, now we're charting off the charts. 🎤\n\nAll love,\n{from} 💎🔥`,
+`{to},\n\nReal talk — no cap, no filter, no facade.\nYou're the greatest thing that ever happened, word to God.\n\n{details}\n\nYou're not just my valentine, you're my whole discography —\nEvery chapter, every hook, every part of me.\nWe don't need a beat to vibe, we make our own,\nTwo hearts synced up, yeah, we're in the zone.\n\nHappy V-Day 💝\n— {from} 🎶`
+],
+nerdy:[
+`Dear {to},\n\nIf love were a programming language, ours would be Python — elegant, powerful, and it just works.\n\n{details}\n\nYou're not a bug in my code — you're the feature I didn't know I needed. My heart has O(1) lookup time for you: constant, instant, always.\n\nIn a multiverse of infinite possibilities, I'd choose you in every single branch.\n\nreturn "I love you";\n\n{from} 🤓💾`,
+`{to},\n\nAccording to my calculations, the probability of finding someone as incredible as you is approximately 1 in 7.9 billion. And yet here you are, defying statistics.\n\n{details}\n\nYou're the solution to every equation I couldn't solve alone. My love for you isn't just exponential — it's factorial.\n\nHappy Valentine's Day. You've officially passed my Turing test for soulmates.\n\n{from} ∞❤️`
+]
+};
+
+let currentLetter='';
+
+function generateLetter(){
+const to=document.getElementById('recipientName').value||'My Love';
+const from=document.getElementById('senderName').value||'Your Valentine';
+const details=document.getElementById('details').value;
+const pool=templates[selectedStyle]||templates.romantic;
+const template=pool[Math.floor(Math.random()*pool.length)];
+
+let detailLine=details?`\n${details}\n`:'';
+currentLetter=template.replace(/{to}/g,to).replace(/{from}/g,from).replace(/{details}/g,detailLine);
+
+const output=document.getElementById('outputCard');
+const letterEl=document.getElementById('letterOutput');
+output.style.display='block';
+letterEl.innerHTML='';
+
+// Typewriter effect
+let i=0;
+const cursor=document.createElement('span');
+cursor.className='cursor';
+function type(){
+if(i<currentLetter.length){
+const ch=currentLetter[i];
+if(ch==='\n'){letterEl.appendChild(document.createElement('br'))}
+else{letterEl.appendChild(document.createTextNode(ch))}
+letterEl.appendChild(cursor);
+i++;
+setTimeout(type,15+Math.random()*20);
+}else{cursor.remove()}
+}
+type();
+output.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copyLetter(){
+navigator.clipboard.writeText(currentLetter).then(()=>{
+showToast('💝 Copied to clipboard!');
+}).catch(()=>showToast('Could not copy'));
+}
+
+function openEnvelope(){
+document.getElementById('envelopeLetter').textContent=currentLetter;
+document.getElementById('envelope').classList.add('show');
+}
+function closeEnvelope(){document.getElementById('envelope').classList.remove('show')}
+
+function showToast(msg){
+const t=document.createElement('div');t.className='toast';t.textContent=msg;
+document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+}
+</script>
+</body>
+</html>
