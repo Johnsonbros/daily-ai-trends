@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dear Algo — Train Your Algorithm</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#14141f;--accent:#6c5ce7;--accent2:#a29bfe;--text:#e8e8f0;--dim:#6b6b80;--green:#00b894;--red:#ff6b6b;--orange:#fdcb6e;--border:#1e1e30}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.app{max-width:480px;margin:0 auto;padding:16px;padding-bottom:100px}
+h1{font-size:1.6rem;text-align:center;margin:12px 0 4px}
+h1 span{color:var(--accent2)}
+.subtitle{text-align:center;color:var(--dim);font-size:.85rem;margin-bottom:20px}
+.letter-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;position:relative}
+.letter-box label{display:block;font-size:.8rem;color:var(--accent2);margin-bottom:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.letter-box textarea{width:100%;background:transparent;border:none;color:var(--text);font-size:1rem;resize:none;outline:none;min-height:80px;font-family:inherit;line-height:1.5}
+.letter-box textarea::placeholder{color:var(--dim)}
+.send-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:24px}
+.send-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(108,92,231,.4)}
+.send-btn:active{transform:scale(.98)}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.stat{background:var(--card);border-radius:12px;padding:12px 8px;text-align:center}
+.stat-val{font-size:1.4rem;font-weight:700;color:var(--accent2)}
+.stat-label{font-size:.7rem;color:var(--dim);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.section-title{font-size:.85rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;font-weight:600}
+.feed{display:flex;flex-direction:column;gap:10px}
+.post{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;transition:all .4s;position:relative;overflow:hidden}
+.post.boosted{border-color:var(--green);box-shadow:0 0 12px rgba(0,184,148,.15)}
+.post.suppressed{opacity:.4;transform:scale(.96)}
+.post.new{animation:slideIn .5s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.post-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.post-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.post-user{font-weight:600;font-size:.9rem}
+.post-handle{color:var(--dim);font-size:.8rem}
+.post-content{font-size:.95rem;line-height:1.5;margin-bottom:10px}
+.post-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.tag{font-size:.7rem;padding:3px 8px;border-radius:20px;background:rgba(108,92,231,.15);color:var(--accent2)}
+.post-actions{display:flex;gap:16px;color:var(--dim);font-size:.8rem}
+.post-actions span{cursor:pointer;transition:color .2s}
+.post-actions span:hover{color:var(--accent2)}
+.post-score{position:absolute;top:12px;right:12px;font-size:.7rem;padding:3px 8px;border-radius:10px;font-weight:600}
+.post-score.high{background:rgba(0,184,148,.15);color:var(--green)}
+.post-score.med{background:rgba(253,203,110,.15);color:var(--orange)}
+.post-score.low{background:rgba(255,107,107,.15);color:var(--red)}
+.algo-prefs{background:var(--card);border-radius:14px;padding:14px;margin-bottom:16px}
+.pref-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.pref-row:last-child{border:none}
+.pref-name{font-size:.85rem}
+.pref-bar{width:100px;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.pref-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.history{margin-top:20px}
+.letter-entry{background:var(--card);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;border-left:3px solid var(--accent)}
+.letter-entry .time{color:var(--dim);font-size:.75rem}
+.letter-entry .effect{color:var(--green);font-size:.75rem;margin-top:4px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 24px;border-radius:12px;font-size:.9rem;font-weight:500;z-index:100;animation:toastIn .4s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.empty-state{text-align:center;color:var(--dim);padding:30px;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>📝 Dear <span>Algo</span></h1>
+<p class="subtitle">Write a letter to your algorithm. Watch your feed transform.</p>
+
+<div class="letter-box">
+<label>✉️ Write to your algorithm</label>
+<textarea id="letter" placeholder="Dear Algo, show me more indie game dev content and less crypto bros. I want cozy vibes, not hustle culture..."></textarea>
+</div>
+<button class="send-btn" id="sendBtn" onclick="sendLetter()">📮 Send to Algorithm</button>
+
+<div class="stats">
+<div class="stat"><div class="stat-val" id="lettersCount">0</div><div class="stat-label">Letters Sent</div></div>
+<div class="stat"><div class="stat-val" id="satisfactionScore">50</div><div class="stat-label">Satisfaction</div></div>
+<div class="stat"><div class="stat-val" id="feedHealth">C</div><div class="stat-label">Feed Grade</div></div>
+</div>
+
+<div class="section-title">🎛️ Algorithm Preferences</div>
+<div class="algo-prefs" id="algoPrefs"></div>
+
+<div class="section-title">📱 Your Feed</div>
+<div class="feed" id="feed"><div class="empty-state">Send your first letter to shape your feed ✨</div></div>
+
+<div class="section-title history">📜 Letter History</div>
+<div id="history"></div>
+</div>
+
+<script>
+const TOPICS={
+tech:{emoji:'💻',color:'#6c5ce7',users:['@codeWithSara','@devDaniel','@techTina','@hackHarry']},
+gaming:{emoji:'🎮',color:'#00b894',users:['@indieGamer','@retroRex','@cozyPlays','@pixelPete']},
+art:{emoji:'🎨',color:'#fd79a8',users:['@artbyLuna','@sketchDaily','@colorPop','@drawMochi']},
+food:{emoji:'🍜',color:'#fdcb6e',users:['@chefMika','@foodieJay','@bakingBee','@ramenKing']},
+fitness:{emoji:'💪',color:'#e17055',users:['@fitFiona','@gymBro','@yogaZen','@runnerHigh']},
+crypto:{emoji:'🪙',color:'#dfe6e9',users:['@cryptoChad','@moonBoi','@defiDegen','@nftKing']},
+hustle:{emoji:'📈',color:'#b2bec3',users:['@grindset','@sigmaRise','@hustlePro','@10xFounder']},
+nature:{emoji:'🌿',color:'#00b894',users:['@wildLens','@plantMom','@oceanVibes','@skyWatcher']},
+music:{emoji:'🎵',color:'#a29bfe',users:['@lofiBeats','@synthWave','@jazzCat','@indieSound']},
+science:{emoji:'🔬',color:'#74b9ff',users:['@sciSara','@labRat','@spaceNerd','@quantumQ']}
+};
+
+const POST_TEMPLATES={
+tech:['Just shipped a new feature using AI pair programming. The future is wild 🚀','Hot take: vim > vscode and I will die on this hill','Built a full app in 3 hours with Cursor. What even is coding anymore?','The new Copilot SDK is actually insane. Here\'s what I built with it 🧵'],
+gaming:['Found this hidden gem indie game and I can\'t stop playing 🎮','Cozy gaming night with rain sounds and hot cocoa ☕','Why aren\'t more games hand-drawn? This art style is everything','speedrun community is unhinged and I love it'],
+art:['Spent 6 hours on this piece and honestly? Worth it 🎨','Digital vs traditional art debate is so tired. Both are valid.','Drew my cat as a Studio Ghibli character 🐱','Art tip: your "ugly" sketches are more valuable than you think'],
+food:['Made ramen from scratch. 12 hour broth. No regrets 🍜','Unpopular opinion: gas stoves are overrated for home cooking','Found a hole-in-the-wall Thai place that changed my life','Sunday baking session: sourdough + cinnamon rolls 🍞'],
+fitness:['Morning run in the rain hits different 🌧️','Rest days are not lazy days. Your body literally needs them.','New PR on deadlift today! 💪 Slow progress is still progress','Yoga at sunrise > pre-workout at 5am. Fight me.'],
+crypto:['WAGMI 🚀🚀🚀 $PEPE to the moon','Just ape\'d into this new L2. NFA but trust me bro','If you\'re not in crypto rn you\'re literally ngmi','Sold my house for Bitcoin. Wife left. Still bullish.'],
+hustle:['Wake up at 4am. Meditate. Cold shower. Grind. Repeat. 💰','Your 9-5 is someone else\'s dream. But also quit it and start hustling.','I make $47K/month selling AI courses. Here\'s my secret 🧵','Sleep is for the weak. Elon sleeps 4 hours. Be like Elon.'],
+nature:['Caught the most insane sunset from my porch today 🌅','Plant update: my monstera has 3 new leaves! 🌿','Went on a 10-mile hike. Zero phone signal. Best day this year.','Time-lapse of clouds over the mountains. Nature is the best artist.'],
+music:['This lofi playlist is keeping me sane at work 🎵','Discovered a new synth artist and my brain is melting','Jazz + rain sounds + coffee = peak existence ☕','Made a beat in 20 minutes. Sometimes the quick ones hit hardest.'],
+science:['New neuromorphic chip solves physics equations with 1% of the energy 🤯','AI can now read brain MRIs in seconds. Medicine is changing fast.','The James Webb keeps delivering. Latest image is unreal 🔭','Fun fact: octopuses edit their own RNA. They\'re basically aliens.']
+};
+
+let preferences={tech:50,gaming:50,art:50,food:50,fitness:50,crypto:50,hustle:50,nature:50,music:50,science:50};
+let letters=[];
+let satisfaction=50;
+let posts=[];
+
+function analyzeIntent(text){
+const t=text.toLowerCase();
+const boosts={};const suppresses={};
+const keywords={
+tech:['tech','code','coding','programming','dev','software','ai','apps'],
+gaming:['game','gaming','indie','cozy','pixel','retro','play'],
+art:['art','draw','creative','design','illustration','sketch'],
+food:['food','cook','baking','recipe','restaurant','eat'],
+fitness:['fitness','gym','workout','run','yoga','health','exercise'],
+crypto:['crypto','bitcoin','nft','blockchain','web3','defi','token'],
+hustle:['hustle','grind','sigma','entrepreneur','passive income','side hustle'],
+nature:['nature','outdoors','hike','plant','garden','sunset','ocean'],
+music:['music','lofi','beats','song','playlist','jazz','synth'],
+science:['science','research','space','physics','biology','lab']
+};
+const moreRx=/more\s+(\w+)/gi;const lessRx=/less\s+(\w+)/gi;
+const loveRx=/love\s+(\w+)/gi;const hateRx=/hate\s+(\w+)/gi;
+const wantRx=/want\s+(\w+)/gi;const stopRx=/stop\s+(\w+)/gi;
+for(const[topic,kws]of Object.entries(keywords)){
+for(const kw of kws){
+if(t.includes('more '+kw)||t.includes('love '+kw)||t.includes('want '+kw)||t.includes('show me '+kw))boosts[topic]=(boosts[topic]||0)+25;
+if(t.includes('less '+kw)||t.includes('hate '+kw)||t.includes('stop '+kw)||t.includes('no more '+kw)||t.includes('fewer '+kw))suppresses[topic]=(suppresses[topic]||0)+25;
+if(t.includes(kw)&&!t.includes('less')&&!t.includes('no ')&&!t.includes('stop')&&!t.includes('hate'))boosts[topic]=(boosts[topic]||0)+10;
+}
+}
+if(t.includes('cozy')||t.includes('chill')||t.includes('calm')||t.includes('peaceful')){boosts.nature=(boosts.nature||0)+15;boosts.music=(boosts.music||0)+15;boosts.art=(boosts.art||0)+10;suppresses.hustle=(suppresses.hustle||0)+20;suppresses.crypto=(suppresses.crypto||0)+15}
+if(t.includes('inspiring')||t.includes('motivat')){boosts.fitness=(boosts.fitness||0)+10;boosts.science=(boosts.science||0)+10}
+if(t.includes('fun')||t.includes('funny')||t.includes('laugh')){boosts.gaming=(boosts.gaming||0)+10}
+return{boosts,suppresses};
+}
+
+function applyChanges(boosts,suppresses){
+for(const[t,v]of Object.entries(boosts))preferences[t]=Math.min(100,preferences[t]+v);
+for(const[t,v]of Object.entries(suppresses))preferences[t]=Math.max(0,preferences[t]-v);
+}
+
+function renderPrefs(){
+const el=document.getElementById('algoPrefs');
+el.innerHTML=Object.entries(preferences).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+const t=TOPICS[k];const c=v>70?'var(--green)':v>40?'var(--orange)':'var(--red)';
+return`<div class="pref-row"><span class="pref-name">${t.emoji} ${k.charAt(0).toUpperCase()+k.slice(1)}</span><div class="pref-bar"><div class="pref-fill" style="width:${v}%;background:${c}"></div></div></div>`;
+}).join('');
+}
+
+function generatePost(topic,boosted){
+const t=TOPICS[topic];
+const tpls=POST_TEMPLATES[topic];
+const content=tpls[Math.floor(Math.random()*tpls.length)];
+const user=t.users[Math.floor(Math.random()*t.users.length)];
+const score=preferences[topic];
+const scoreClass=score>70?'high':score>40?'med':'low';
+const likes=Math.floor(Math.random()*500+score*10);
+const replies=Math.floor(Math.random()*50+score);
+return`<div class="post ${boosted?'boosted new':score<30?'suppressed':'new'}">
+<span class="post-score ${scoreClass}">${score}%</span>
+<div class="post-header">
+<div class="post-avatar" style="background:${t.color}30">${t.emoji}</div>
+<div><div class="post-user">${user.slice(1)}</div><div class="post-handle">${user} · 2h</div></div>
+</div>
+<div class="post-content">${content}</div>
+<div class="post-tags"><span class="tag">${topic}</span>${boosted?'<span class="tag" style="background:rgba(0,184,148,.15);color:var(--green)">boosted</span>':''}</div>
+<div class="post-actions"><span>❤️ ${likes}</span><span>💬 ${replies}</span><span>🔄 ${Math.floor(likes/3)}</span><span>📌</span></div>
+</div>`;
+}
+
+function generateFeed(boosts,suppresses){
+const feedEl=document.getElementById('feed');
+const sorted=Object.entries(preferences).sort((a,b)=>b[1]-a[1]);
+let html='';
+const shown=new Set();
+for(const[topic]of sorted.slice(0,3)){html+=generatePost(topic,!!boosts[topic]);shown.add(topic)}
+for(const[topic]of sorted.slice(3,6)){if(Math.random()>.3){html+=generatePost(topic,!!boosts[topic]);shown.add(topic)}}
+for(const[topic]of sorted.slice(6)){if(preferences[topic]>20&&Math.random()>.6)html+=generatePost(topic,false)}
+feedEl.innerHTML=html;
+}
+
+function updateStats(){
+const vals=Object.values(preferences);
+const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+const max=Math.max(...vals);
+const spread=max-Math.min(...vals);
+satisfaction=Math.min(100,Math.floor(50+spread/3+letters.length*5));
+document.getElementById('lettersCount').textContent=letters.length;
+document.getElementById('satisfactionScore').textContent=satisfaction;
+const grade=satisfaction>85?'A+':satisfaction>75?'A':satisfaction>65?'B':satisfaction>50?'C':satisfaction>35?'D':'F';
+document.getElementById('feedHealth').textContent=grade;
+}
+
+function addToHistory(text,boosts,suppresses){
+const el=document.getElementById('history');
+const boostList=Object.keys(boosts).map(t=>`↑${t}`).join(' ');
+const supList=Object.keys(suppresses).map(t=>`↓${t}`).join(' ');
+const effects=[boostList,supList].filter(Boolean).join(' · ')||'No changes detected';
+el.innerHTML=`<div class="letter-entry"><div class="time">Just now</div>"${text.slice(0,100)}${text.length>100?'...':''}"<div class="effect">Effect: ${effects}</div></div>`+el.innerHTML;
+}
+
+function showToast(msg){
+const t=document.createElement('div');t.className='toast';t.textContent=msg;
+document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+}
+
+function sendLetter(){
+const ta=document.getElementById('letter');
+const text=ta.value.trim();
+if(!text)return;
+const btn=document.getElementById('sendBtn');
+btn.disabled=true;btn.textContent='🔄 Algorithm processing...';
+const{boosts,suppresses}=analyzeIntent(text);
+setTimeout(()=>{
+applyChanges(boosts,suppresses);
+letters.push({text,time:Date.now()});
+renderPrefs();
+generateFeed(boosts,suppresses);
+updateStats();
+addToHistory(text,boosts,suppresses);
+ta.value='';
+btn.disabled=false;btn.textContent='📮 Send to Algorithm';
+const changes=Object.keys(boosts).length+Object.keys(suppresses).length;
+showToast(changes>0?`✨ Feed updated! ${changes} preferences adjusted`:'🤔 Try being more specific about what you want!');
+},800);
+}
+
+// Init
+renderPrefs();
+document.getElementById('letter').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendLetter()}});
+
+// Prefill suggestions
+const suggestions=['Dear Algo, show me more cozy gaming content and art. Less crypto and hustle culture please!','Dear Algo, I love science and nature. Stop showing me influencer content.','Dear Algo, more music and food content! I want vibes, not drama.','Dear Algo, I want tech and coding content but make it fun, not corporate.'];
+document.getElementById('letter').placeholder=suggestions[Math.floor(Math.random()*suggestions.length)];
+</script>
+</body>
+</html>
