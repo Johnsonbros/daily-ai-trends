@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌍 AI Policy Globe — Who's Regulating AI?</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e1a;color:#e0e0e0;min-height:100vh;overflow-x:hidden}
+header{text-align:center;padding:20px 16px 10px;background:linear-gradient(135deg,#0d1224,#1a1040)}
+header h1{font-size:1.6rem;background:linear-gradient(90deg,#60a5fa,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+header p{font-size:.85rem;color:#888;max-width:600px;margin:0 auto}
+.summit-banner{background:linear-gradient(90deg,#f97316,#ef4444);color:#fff;text-align:center;padding:8px 16px;font-size:.8rem;font-weight:600;letter-spacing:.5px}
+.summit-banner span{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.filters{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;justify-content:center;flex-wrap:wrap}
+.filters button{padding:6px 14px;border-radius:20px;border:1px solid #333;background:#151a2e;color:#aaa;font-size:.75rem;cursor:pointer;white-space:nowrap;transition:all .2s}
+.filters button.active,.filters button:hover{border-color:#60a5fa;color:#60a5fa;background:#1a2040}
+.filters button[data-f="regulate"].active{border-color:#ef4444;color:#ef4444}
+.filters button[data-f="moderate"].active{border-color:#f59e0b;color:#f59e0b}
+.filters button[data-f="open"].active{border-color:#22c55e;color:#22c55e}
+.filters button[data-f="emerging"].active{border-color:#a78bfa;color:#a78bfa}
+.map-wrap{position:relative;width:100%;max-width:900px;margin:0 auto;padding:0 10px}
+.map-wrap svg{width:100%;height:auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px;max-width:600px;margin:0 auto}
+.stat{text-align:center;padding:10px 4px;background:#111827;border-radius:12px;border:1px solid #1e293b}
+.stat .num{font-size:1.4rem;font-weight:700}
+.stat .lbl{font-size:.65rem;color:#888;margin-top:2px}
+.stat.regulate .num{color:#ef4444}
+.stat.moderate .num{color:#f59e0b}
+.stat.open .num{color:#22c55e}
+.stat.emerging .num{color:#a78bfa}
+.countries{padding:12px 16px;max-width:700px;margin:0 auto}
+.countries h2{font-size:1rem;margin-bottom:10px;color:#ccc}
+.country-card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.country-card:hover{border-color:#60a5fa;transform:translateY(-1px)}
+.country-card .top{display:flex;justify-content:space-between;align-items:center}
+.country-card .name{font-weight:600;font-size:.95rem}
+.country-card .flag{font-size:1.3rem}
+.country-card .stance{font-size:.7rem;padding:3px 10px;border-radius:10px;font-weight:600}
+.stance.regulate{background:#451a1a;color:#ef4444}
+.stance.moderate{background:#45351a;color:#f59e0b}
+.stance.open{background:#1a3a1a;color:#22c55e}
+.stance.emerging{background:#2d1a45;color:#a78bfa}
+.country-card .details{display:none;margin-top:10px;font-size:.82rem;color:#aaa;line-height:1.5;border-top:1px solid #1e293b;padding-top:10px}
+.country-card.expanded .details{display:block}
+.country-card .key-policy{margin-top:6px;font-size:.75rem;color:#60a5fa}
+.timeline{padding:20px 16px;max-width:700px;margin:0 auto}
+.timeline h2{font-size:1rem;margin-bottom:12px;color:#ccc}
+.tl-item{display:flex;gap:12px;margin-bottom:14px;position:relative}
+.tl-dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.tl-content{flex:1}
+.tl-date{font-size:.7rem;color:#666}
+.tl-text{font-size:.82rem;color:#bbb;margin-top:2px}
+.tl-line{position:absolute;left:4px;top:16px;width:2px;height:calc(100% + 4px);background:#1e293b}
+footer{text-align:center;padding:20px;font-size:.7rem;color:#555}
+.search{padding:8px 16px;max-width:500px;margin:0 auto}
+.search input{width:100%;padding:10px 14px;border-radius:10px;border:1px solid #333;background:#111827;color:#e0e0e0;font-size:.85rem;outline:none}
+.search input:focus{border-color:#60a5fa}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="summit-banner">🇮🇳 <span>LIVE NOW</span> — India AI Impact Summit 2026 · New Delhi · Feb 16-20 · Global Leaders Shaping AI Policy</div>
+
+<header>
+<h1>🌍 AI Policy Globe</h1>
+<p>Interactive tracker of how 20+ nations are regulating AI — updated for the India AI Summit 2026</p>
+</header>
+
+<div class="stats">
+<div class="stat regulate"><div class="num" id="s-regulate">0</div><div class="lbl">Strict</div></div>
+<div class="stat moderate"><div class="num" id="s-moderate">0</div><div class="lbl">Moderate</div></div>
+<div class="stat open"><div class="num" id="s-open">0</div><div class="lbl">Open</div></div>
+<div class="stat emerging"><div class="num" id="s-emerging">0</div><div class="lbl">Emerging</div></div>
+</div>
+
+<div class="search"><input type="text" id="searchBox" placeholder="🔍 Search countries or policies..."></div>
+
+<div class="filters">
+<button class="active" data-f="all">All</button>
+<button data-f="regulate">🔴 Strict</button>
+<button data-f="moderate">🟡 Moderate</button>
+<button data-f="open">🟢 Open</button>
+<button data-f="emerging">🟣 Emerging</button>
+</div>
+
+<div class="countries" id="countryList"></div>
+
+<div class="timeline">
+<h2>📅 AI Regulation Timeline</h2>
+<div id="timeline"></div>
+</div>
+
+<footer>Built by ZEKE 🗝️ · Daily AI Trends · Feb 16, 2026<br>Data sourced from public policy trackers. Not legal advice.</footer>
+
+<script>
+const countries=[
+{name:"European Union",flag:"🇪🇺",stance:"regulate",score:9,summary:"The EU AI Act (2024) is the world's first comprehensive AI law. Bans social scoring, real-time biometric surveillance. Risk-based classification system. Full enforcement began Feb 2025.",keyPolicy:"EU AI Act — risk tiers: unacceptable, high, limited, minimal",pop:"447M"},
+{name:"China",flag:"🇨🇳",stance:"regulate",score:8,summary:"Multiple overlapping regulations: generative AI rules (2023), deep synthesis provisions, algorithmic recommendation rules. All AI services must register with CAC. Content must align with 'core socialist values'.",keyPolicy:"Generative AI Measures + Deep Synthesis Provisions",pop:"1.4B"},
+{name:"United States",flag:"🇺🇸",stance:"moderate",score:5,summary:"No federal AI law yet. Executive Order 14110 (Oct 2023) set safety standards. NIST AI Risk Management Framework voluntary. State-level patchwork: Colorado AI Act, California proposals. Congress debating multiple bills.",keyPolicy:"EO 14110 + NIST AI RMF (voluntary) + state patchwork",pop:"335M"},
+{name:"United Kingdom",flag:"🇬🇧",stance:"open",score:3,summary:"Pro-innovation, sector-specific approach. No single AI regulator. Existing regulators (FCA, Ofcom, etc.) apply AI principles. AI Safety Institute conducts frontier model evaluations. Bletchley Declaration signatory.",keyPolicy:"Pro-innovation framework — sector regulators lead",pop:"67M"},
+{name:"India",flag:"🇮🇳",stance:"emerging",score:4,summary:"Hosting AI Impact Summit 2026 (Feb 16-20). IndiaAI Mission launched with ₹10K crore budget. No comprehensive AI law yet but Digital India Act in progress. Focus on AI for governance & public services.",keyPolicy:"IndiaAI Mission + Digital India Act (draft)",pop:"1.4B"},
+{name:"Canada",flag:"🇨🇦",stance:"moderate",score:6,summary:"AIDA (Artificial Intelligence and Data Act) passed as part of Bill C-27. Creates AI & Data Commissioner role. Focuses on high-impact systems. Voluntary AI code of conduct for generative AI.",keyPolicy:"AIDA (Bill C-27) + Voluntary Code of Conduct",pop:"40M"},
+{name:"Brazil",flag:"🇧🇷",stance:"moderate",score:5,summary:"AI regulatory framework (PL 2338/2023) advancing through Congress. Risk-based approach inspired by EU. President Lula attending India AI Summit. Focus on reducing inequality through AI.",keyPolicy:"PL 2338/2023 — risk-based AI framework",pop:"216M"},
+{name:"Japan",flag:"🇯🇵",stance:"open",score:3,summary:"Light-touch, innovation-first. AI Guidelines for Business published 2024. No binding AI law. Hiroshima AI Process led G7 AI governance. Strong focus on AI safety research.",keyPolicy:"Hiroshima AI Process + voluntary guidelines",pop:"125M"},
+{name:"South Korea",flag:"🇰🇷",stance:"moderate",score:5,summary:"AI Basic Act passed Dec 2024, effective 2026. Establishes AI Committee under PM. Risk classification for high-impact AI. Strong semiconductor + AI industrial policy.",keyPolicy:"AI Basic Act (2024) — high-impact classification",pop:"52M"},
+{name:"Australia",flag:"🇦🇺",stance:"moderate",score:4,summary:"Voluntary AI Ethics Framework since 2019. Mandatory guardrails for high-risk AI proposed 2024. Consulting on AI-specific legislation. Focus on responsible AI in government procurement.",keyPolicy:"Mandatory guardrails proposal + ethics framework",pop:"26M"},
+{name:"Singapore",flag:"🇸🇬",stance:"open",score:3,summary:"Model AI Governance Framework (voluntary). AI Verify testing toolkit open-sourced. Sector-specific guidelines. Pro-business approach. Major AI research hub in SE Asia.",keyPolicy:"AI Verify toolkit + Model Governance Framework",pop:"6M"},
+{name:"France",flag:"🇫🇷",stance:"moderate",score:6,summary:"Macron attending India AI Summit. Strong EU AI Act enforcer. CNIL active on AI/privacy. National AI strategy with €2.2B investment. Mistral AI as national champion.",keyPolicy:"EU AI Act enforcement + €2.2B national strategy",pop:"68M"},
+{name:"Germany",flag:"🇩🇪",stance:"regulate",score:7,summary:"Strict EU AI Act implementation. DPA aggressive on AI/GDPR enforcement. Concern over AI in workplace surveillance. Strong worker protection angle. Industrial AI focus.",keyPolicy:"EU AI Act + strict GDPR/AI enforcement",pop:"84M"},
+{name:"Israel",flag:"🇮🇱",stance:"open",score:2,summary:"No AI-specific regulation. Innovation-first policy. National AI program focused on R&D. Military AI (Unit 8200 pipeline) drives tech sector. Ethics guidelines voluntary.",keyPolicy:"Innovation-first — no binding AI regulation",pop:"10M"},
+{name:"UAE",flag:"🇦🇪",stance:"open",score:3,summary:"Minister of State for AI (first in world). National AI Strategy 2031. Abu Dhabi's Technology Innovation Institute built Falcon LLM. Light regulation to attract AI companies.",keyPolicy:"National AI Strategy 2031 + Minister of AI",pop:"10M"},
+{name:"Saudi Arabia",flag:"🇸🇦",stance:"emerging",score:4,summary:"AI as central pillar of Vision 2030. SDAIA (Saudi Data & AI Authority) oversees strategy. Massive investment in AI infrastructure. AI ethics principles published but non-binding.",keyPolicy:"Vision 2030 AI pillar + SDAIA governance",pop:"36M"},
+{name:"Nigeria",flag:"🇳🇬",stance:"emerging",score:2,summary:"National AI Strategy published 2024. NITDA developing AI regulatory framework. Focus on AI for agriculture, healthcare, fintech. Early-stage policy development.",keyPolicy:"National AI Strategy + NITDA framework (draft)",pop:"224M"},
+{name:"Kenya",flag:"🇰🇪",stance:"emerging",score:2,summary:"AI task force recommendations published. Data Protection Act (2019) applies to AI. Growing tech hub (Silicon Savannah). Focus on AI for development.",keyPolicy:"AI Task Force + Data Protection Act",pop:"55M"},
+{name:"Indonesia",flag:"🇮🇩",stance:"emerging",score:3,summary:"National AI Strategy (Stranas KA) launched 2020. AI ethics guidelines published. Focus on AI for public services. Digital transformation agenda. Large market attracting AI investment.",keyPolicy:"Stranas KA + AI ethics guidelines",pop:"278M"},
+{name:"Mexico",flag:"🇲🇽",stance:"emerging",score:2,summary:"No AI-specific law. Senate exploring AI regulation proposals. Focus on AI in manufacturing (nearshoring boom). Academic AI ethics initiatives leading policy discussion.",keyPolicy:"Exploratory — Senate AI proposals in discussion",pop:"130M"}
+];
+
+const timeline=[
+{date:"Feb 16-20, 2026",text:"🇮🇳 India AI Impact Summit — global leaders gather in New Delhi to shape AI governance",color:"#a78bfa"},
+{date:"Feb 2, 2025",text:"🇪🇺 EU AI Act begins full enforcement — first bans on unacceptable-risk AI take effect",color:"#ef4444"},
+{date:"Jan 2025",text:"🇰🇷 South Korea AI Basic Act enters force — Asia's newest comprehensive AI law",color:"#f59e0b"},
+{date:"Dec 2024",text:"🇰🇷 South Korea passes AI Basic Act through National Assembly",color:"#f59e0b"},
+{date:"Oct 2023",text:"🇺🇸 Biden signs Executive Order 14110 on safe, secure AI development",color:"#f59e0b"},
+{date:"Nov 2023",text:"🇬🇧 Bletchley Park AI Safety Summit — 28 nations sign declaration",color:"#22c55e"},
+{date:"Jul 2023",text:"🇨🇳 China's Generative AI Measures take effect — registration required",color:"#ef4444"},
+{date:"Jun 2023",text:"🇪🇺 European Parliament approves AI Act negotiating position",color:"#ef4444"},
+{date:"May 2023",text:"🇯🇵 G7 Hiroshima AI Process launched under Japan's presidency",color:"#22c55e"},
+];
+
+function render(filter='all',search=''){
+const list=document.getElementById('countryList');
+const s=search.toLowerCase();
+const filtered=countries.filter(c=>{
+if(filter!=='all'&&c.stance!==filter)return false;
+if(s&&!c.name.toLowerCase().includes(s)&&!c.summary.toLowerCase().includes(s)&&!c.keyPolicy.toLowerCase().includes(s))return false;
+return true;
+});
+list.innerHTML=filtered.map(c=>`
+<div class="country-card" onclick="this.classList.toggle('expanded')">
+<div class="top">
+<span class="name">${c.flag} ${c.name}</span>
+<span class="stance ${c.stance}">${c.stance==='regulate'?'Strict':c.stance==='moderate'?'Moderate':c.stance==='open'?'Open':'Emerging'}</span>
+</div>
+<div class="details">
+<div>${c.summary}</div>
+<div class="key-policy">📋 ${c.keyPolicy}</div>
+<div style="margin-top:6px;font-size:.72rem;color:#666">Population: ${c.pop} · Regulation Score: ${c.score}/10</div>
+</div>
+</div>`).join('');
+
+const counts={regulate:0,moderate:0,open:0,emerging:0};
+countries.forEach(c=>counts[c.stance]++);
+document.getElementById('s-regulate').textContent=counts.regulate;
+document.getElementById('s-moderate').textContent=counts.moderate;
+document.getElementById('s-open').textContent=counts.open;
+document.getElementById('s-emerging').textContent=counts.emerging;
+}
+
+function renderTimeline(){
+document.getElementById('timeline').innerHTML=timeline.map((t,i)=>`
+<div class="tl-item">
+<div class="tl-dot" style="background:${t.color}"></div>
+${i<timeline.length-1?'<div class="tl-line"></div>':''}
+<div class="tl-content">
+<div class="tl-date">${t.date}</div>
+<div class="tl-text">${t.text}</div>
+</div>
+</div>`).join('');
+}
+
+document.querySelectorAll('.filters button').forEach(btn=>{
+btn.addEventListener('click',()=>{
+document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+render(btn.dataset.f,document.getElementById('searchBox').value);
+});
+});
+
+document.getElementById('searchBox').addEventListener('input',e=>{
+const active=document.querySelector('.filters button.active');
+render(active?.dataset.f||'all',e.target.value);
+});
+
+render();
+renderTimeline();
+</script>
+</body>
+</html>
