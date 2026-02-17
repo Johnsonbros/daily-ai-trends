@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepfake Detective 🔍</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#14141f;--accent:#ff3366;--accent2:#7c3aed;--green:#10b981;--red:#ef4444;--text:#e2e8f0;--dim:#64748b;--gold:#fbbf24}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:16px}
+header{text-align:center;padding:20px 0 10px}
+header h1{font-size:1.6rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+header p{color:var(--dim);font-size:.85rem}
+.stats{display:flex;gap:12px;justify-content:center;margin:16px 0}
+.stat{background:var(--card);border-radius:12px;padding:10px 16px;text-align:center;flex:1}
+.stat .val{font-size:1.4rem;font-weight:700}
+.stat .lbl{font-size:.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.stat.score .val{color:var(--gold)}
+.stat.streak .val{color:var(--green)}
+.stat.round .val{color:var(--accent2)}
+.scene{background:var(--card);border-radius:16px;overflow:hidden;margin:16px 0;position:relative}
+.scene-header{padding:12px 16px;border-bottom:1px solid #1e1e2e;display:flex;justify-content:space-between;align-items:center}
+.scene-header .label{font-size:.8rem;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.timer{font-size:.85rem;color:var(--gold);font-weight:600}
+.canvas-wrap{position:relative;width:100%;aspect-ratio:16/10;background:#0d0d15;cursor:crosshair;touch-action:none}
+canvas{width:100%;height:100%;display:block}
+.hotspots-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.hotspot-marker{position:absolute;width:40px;height:40px;border:2px solid var(--accent);border-radius:50%;transform:translate(-50%,-50%);animation:pulse 1.5s infinite;pointer-events:none}
+@keyframes pulse{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.5;transform:translate(-50%,-50%) scale(1.3)}}
+.hotspot-marker.found{border-color:var(--green);animation:none}
+.hotspot-marker.missed{border-color:var(--red);animation:none}
+.clue{padding:12px 16px;background:#1a1a2e;font-size:.8rem;color:var(--dim);text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;gap:6px}
+.clue em{color:var(--text);font-style:normal}
+.actions{display:flex;gap:10px;padding:0 0 8px}
+.btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-real{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.btn-fake{background:linear-gradient(135deg,var(--accent),#cc2255);color:#fff}
+.btn-next{background:linear-gradient(135deg,var(--accent2),#5b21b6);color:#fff;display:none}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:default;transform:none}
+.feedback{text-align:center;padding:16px;font-size:1.1rem;font-weight:700;min-height:56px;display:flex;align-items:center;justify-content:center}
+.feedback.correct{color:var(--green)}
+.feedback.wrong{color:var(--red)}
+.progress{height:4px;background:#1e1e2e;border-radius:2px;margin:8px 0;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;border-radius:2px}
+.intro,.gameover{text-align:center;padding:40px 20px}
+.intro h2,.gameover h2{font-size:1.3rem;margin-bottom:12px}
+.intro p,.gameover p{color:var(--dim);font-size:.9rem;margin-bottom:20px;line-height:1.5}
+.btn-start{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:16px 40px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
+.btn-start:active{transform:scale(.97)}
+.gameover .final{font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,var(--gold),#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:8px 0}
+.gameover .rank{font-size:1.1rem;color:var(--accent);margin-bottom:20px}
+.artifact-list{padding:16px;display:none}
+.artifact-list h3{font-size:.85rem;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.artifact-item{background:#1a1a2e;border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:.8rem;display:flex;gap:8px;align-items:start}
+.artifact-item .icon{font-size:1rem;flex-shrink:0}
+.badge{display:inline-block;font-size:.65rem;background:var(--accent2);color:#fff;padding:2px 8px;border-radius:10px;margin-left:6px}
+.news-ticker{background:#1a1a2e;padding:8px 16px;font-size:.75rem;color:var(--dim);text-align:center;border-radius:8px;margin-top:12px}
+.news-ticker a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+<header>
+<h1>🔍 Deepfake Detective</h1>
+<p>Inspired by the Seedance 2.0 vs Disney controversy</p>
+</header>
+<div class="progress"><div class="progress-bar" id="progress" style="width:0%"></div></div>
+<div class="stats">
+<div class="stat score"><div class="val" id="score">0</div><div class="lbl">Score</div></div>
+<div class="stat streak"><div class="val" id="streak">0🔥</div><div class="lbl">Streak</div></div>
+<div class="stat round"><div class="val" id="roundNum">0/10</div><div class="lbl">Round</div></div>
+</div>
+
+<div id="intro" class="intro">
+<h2>Can You Spot AI Fakes?</h2>
+<p>ByteDance's Seedance 2.0 went viral with hyperrealistic AI videos — now Disney's threatening legal action. AI-generated media is getting scary good.<br><br>
+<strong>Your mission:</strong> Examine each scene. Tap suspicious areas to find AI artifacts, then decide: <em>Real</em> or <em>AI-Generated</em>?</p>
+<button class="btn-start" onclick="startGame()">Start Investigation 🕵️</button>
+</div>
+
+<div id="gameArea" style="display:none">
+<div class="scene">
+<div class="scene-header">
+<span class="label" id="sceneLabel">Scene 1</span>
+<span class="timer" id="timer">⏱ 15s</span>
+</div>
+<div class="canvas-wrap" id="canvasWrap">
+<canvas id="canvas"></canvas>
+<div class="hotspots-overlay" id="hotspots"></div>
+</div>
+<div class="clue" id="clue">Examine the scene carefully...</div>
+</div>
+<div class="artifact-list" id="artifactList">
+<h3>🔬 Detected Artifacts</h3>
+<div id="artifactItems"></div>
+</div>
+<div class="feedback" id="feedback"></div>
+<div class="actions">
+<button class="btn btn-real" id="btnReal" onclick="judge(true)">✅ Real</button>
+<button class="btn btn-fake" id="btnFake" onclick="judge(false)">🤖 AI Fake</button>
+<button class="btn btn-next" id="btnNext" onclick="nextRound()">Next Scene →</button>
+</div>
+</div>
+
+<div id="gameover" class="gameover" style="display:none">
+<h2>Investigation Complete</h2>
+<div class="final" id="finalScore">0</div>
+<p id="finalMsg"></p>
+<div class="rank" id="rank"></div>
+<button class="btn-start" onclick="startGame()">Play Again 🔄</button>
+</div>
+
+<div class="news-ticker">
+📰 Feb 17, 2026: Disney threatens ByteDance over Seedance 2.0 deepfakes of Tom Cruise & Brad Pitt
+</div>
+</div>
+
+<script>
+const C=document.getElementById('canvas'),ctx=C.getContext('2d');
+const scenes=[
+{name:"Celebrity Interview",isReal:false,bg:"#1a1028",desc:"A-list actor giving a press conference",
+ objects:[{type:"face",x:.35,y:.25,w:.3,h:.35,real:false},{type:"mic",x:.48,y:.62,w:.04,h:.15},{type:"bg_lights",x:.1,y:.05,w:.8,h:.12}],
+ artifacts:[{x:.42,y:.35,r:25,label:"Ear asymmetry — left ear morphs unnaturally",icon:"👂"},{x:.55,y:.28,r:20,label:"Hair-forehead boundary flickers",icon:"💇"},{x:.38,y:.55,r:22,label:"Collar shadow inconsistent with lighting",icon:"👔"}],
+ clue:"Look at the ears, hairline, and clothing edges"},
+{type:"face",name:"Sunset Landscape",isReal:true,bg:"#1a0f08",desc:"Golden hour over mountain range",
+ objects:[{type:"mountain",x:.0,y:.4,w:1,h:.35},{type:"sun",x:.7,y:.2,w:.12,h:.12},{type:"clouds",x:.1,y:.1,w:.5,h:.15}],
+ artifacts:[],clue:"Natural scenes have consistent lighting throughout"},
+{name:"AI News Anchor",isReal:false,bg:"#0a1628",desc:"News anchor reading evening bulletin",
+ objects:[{type:"face",x:.4,y:.2,w:.2,h:.3,real:false},{type:"desk",x:.1,y:.6,w:.8,h:.2},{type:"screen",x:.05,y:.05,w:.25,h:.35}],
+ artifacts:[{x:.48,y:.32,r:20,label:"Teeth count changes between frames",icon:"🦷"},{x:.52,y:.22,r:18,label:"Eye reflection doesn't match studio lights",icon:"👁"},{x:.3,y:.65,r:25,label:"Hands have 6 fingers visible",icon:"🖐"}],
+ clue:"Check teeth, eye reflections, and hand details"},
+{name:"Street Photography",isReal:true,bg:"#151515",desc:"Rainy night in Tokyo, neon reflections",
+ objects:[{type:"building",x:.0,y:.0,w:.4,h:.8},{type:"road",x:.0,y:.7,w:1,h:.3},{type:"neon",x:.5,y:.1,w:.3,h:.5}],
+ artifacts:[],clue:"Rain reflections and neon glow are hard to fake consistently"},
+{name:"Product Commercial",isReal:false,bg:"#0f1a0f",desc:"Luxury watch spinning on velvet",
+ objects:[{type:"watch",x:.3,y:.2,w:.4,h:.4},{type:"velvet",x:.0,y:.55,w:1,h:.45},{type:"sparkle",x:.45,y:.3,w:.1,h:.1}],
+ artifacts:[{x:.45,y:.35,r:22,label:"Watch text is gibberish — AI can't spell",icon:"⌚"},{x:.55,y:.45,r:20,label:"Crown shadow direction contradicts main light",icon:"💡"},{x:.35,y:.6,r:24,label:"Velvet texture repeats in tiling pattern",icon:"🔲"}],
+ clue:"Text on objects and shadow consistency are AI tells"},
+{name:"Wildlife Documentary",isReal:true,bg:"#0a1a0a",desc:"Elephant family crossing savanna at dusk",
+ objects:[{type:"elephant",x:.2,y:.3,w:.35,h:.35},{type:"tree",x:.7,y:.1,w:.2,h:.6},{type:"grass",x:.0,y:.65,w:1,h:.35}],
+ artifacts:[],clue:"Animal anatomy and natural movement are still hard for AI"},
+{name:"Movie Scene Recreation",isReal:false,bg:"#1a0a0a",desc:"Two actors in a dramatic confrontation",
+ objects:[{type:"face",x:.15,y:.2,w:.2,h:.3},{type:"face2",x:.6,y:.2,w:.2,h:.3},{type:"bg_wall",x:.0,y:.0,w:1,h:1}],
+ artifacts:[{x:.22,y:.42,r:22,label:"Jacket lapel phases through body",icon:"🧥"},{x:.68,y:.28,r:20,label:"Forehead wrinkles are perfectly symmetrical",icon:"🧠"},{x:.4,y:.5,r:25,label:"Shadow casts in two directions simultaneously",icon:"🌑"}],
+ clue:"Clothing physics and shadow direction reveal AI generation"},
+{name:"Cooking Show",isReal:true,bg:"#1a1408",desc:"Chef preparing sushi on wooden counter",
+ objects:[{type:"counter",x:.0,y:.5,w:1,h:.5},{type:"chef",x:.3,y:.1,w:.3,h:.5},{type:"food",x:.55,y:.55,w:.2,h:.15}],
+ artifacts:[],clue:"Real kitchens have imperfect, lived-in details"},
+{name:"Music Video",isReal:false,bg:"#14081a",desc:"Pop star dancing in neon-lit club",
+ objects:[{type:"dancer",x:.35,y:.15,w:.3,h:.6},{type:"lights",x:.0,y:.0,w:1,h:.2},{type:"floor",x:.0,y:.75,w:1,h:.25}],
+ artifacts:[{x:.45,y:.65,r:22,label:"Feet slide on floor — no real contact",icon:"👟"},{x:.48,y:.25,r:20,label:"Necklace floats away from neck",icon:"📿"},{x:.55,y:.4,r:24,label:"Background dancers change count between cuts",icon:"👯"}],
+ clue:"Physics of jewelry, feet contact, and background consistency"},
+{name:"Architectural Photo",isReal:true,bg:"#0f0f1a",desc:"Modern glass building with cloud reflections",
+ objects:[{type:"building",x:.2,y:.0,w:.6,h:.85},{type:"ground",x:.0,y:.8,w:1,h:.2},{type:"clouds",x:.0,y:.0,w:.25,h:.3}],
+ artifacts:[],clue:"Real architecture has consistent geometry and reflections"}
+];
+
+let state={round:0,score:0,streak:0,maxStreak:0,found:[],timer:null,timeLeft:15,active:true};
+
+function resize(){
+const w=document.getElementById('canvasWrap');
+C.width=w.clientWidth*2;C.height=w.clientHeight*2;
+ctx.scale(2,2);
+}
+
+function drawScene(s){
+resize();
+const w=C.width/2,h=C.height/2;
+ctx.fillStyle=s.bg;ctx.fillRect(0,0,w,h);
+const seed=state.round*7+13;
+// Draw procedural scene
+s.objects.forEach((o,i)=>{
+ const ox=o.x*w,oy=o.y*h,ow=o.w*w,oh=o.h*h;
+ switch(o.type){
+  case'face':case'face2':
+   ctx.fillStyle='#d4a574';ctx.beginPath();ctx.ellipse(ox+ow/2,oy+oh/2,ow/2,oh/2,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#2a1a0a';
+   ctx.fillRect(ox+ow*.25,oy+oh*.35,ow*.15,oh*.08);
+   ctx.fillRect(ox+ow*.6,oy+oh*.35,ow*.15,oh*.08);
+   ctx.fillStyle='#c4715a';ctx.fillRect(ox+ow*.3,oy+oh*.65,ow*.4,oh*.06);
+   if(!s.isReal){ctx.strokeStyle='rgba(255,50,100,.15)';ctx.lineWidth=1;ctx.strokeRect(ox+ow*.1,oy+oh*.1,ow*.8,oh*.8)}
+   break;
+  case'mountain':
+   ctx.fillStyle='#2a3a2a';ctx.beginPath();ctx.moveTo(ox,oy+oh);
+   for(let j=0;j<5;j++){ctx.lineTo(ox+ow*(j+.5)/5,oy+Math.sin(j*1.7+seed)*.3*oh);ctx.lineTo(ox+ow*(j+1)/5,oy+oh*.5+Math.sin(j*2.1)*oh*.2)}
+   ctx.lineTo(ox+ow,oy+oh);ctx.fill();
+   break;
+  case'sun':
+   const grd=ctx.createRadialGradient(ox+ow/2,oy+oh/2,0,ox+ow/2,oy+oh/2,ow);
+   grd.addColorStop(0,'#ffcc33');grd.addColorStop(.5,'#ff8800');grd.addColorStop(1,'transparent');
+   ctx.fillStyle=grd;ctx.fillRect(ox-ow,oy-oh,ow*4,oh*4);
+   break;
+  case'clouds':
+   ctx.fillStyle='rgba(255,255,255,.15)';
+   for(let j=0;j<3;j++){ctx.beginPath();ctx.ellipse(ox+j*ow/3,oy+oh/2,ow/5,oh/3,0,0,Math.PI*2);ctx.fill()}
+   break;
+  case'desk':case'counter':case'ground':case'floor':case'grass':case'road':case'velvet':
+   const colors={'desk':'#2a2a3a','counter':'#3a2a1a','ground':'#2a2a2a','floor':'#1a1a2a','grass':'#1a2a1a','road':'#1a1a1a','velvet':'#1a0a2a'};
+   ctx.fillStyle=colors[o.type]||'#222';ctx.fillRect(ox,oy,ow,oh);
+   for(let j=0;j<8;j++){ctx.fillStyle='rgba(255,255,255,.03)';ctx.fillRect(ox+Math.sin(j*3+seed)*ow,oy+j*oh/8,ow*.3,1)}
+   break;
+  case'screen':
+   ctx.fillStyle='#0a2a4a';ctx.fillRect(ox,oy,ow,oh);
+   ctx.fillStyle='#1a4a7a';for(let j=0;j<3;j++)ctx.fillRect(ox+4,oy+4+j*12,ow-8,8);
+   break;
+  case'watch':
+   ctx.fillStyle='#c0c0c0';ctx.beginPath();ctx.arc(ox+ow/2,oy+oh/2,ow/2.2,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#1a1a2a';ctx.beginPath();ctx.arc(ox+ow/2,oy+oh/2,ow/2.8,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle='#gold';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ox+ow/2,oy+oh/2);ctx.lineTo(ox+ow/2,oy+oh*.25);ctx.stroke();
+   if(!s.isReal){ctx.fillStyle='rgba(200,180,150,.8)';ctx.font=`${oh*.06}px sans-serif`;ctx.fillText('RLXE',ox+ow*.35,oy+oh*.4)}
+   break;
+  case'sparkle':
+   ctx.fillStyle='rgba(255,255,200,.6)';ctx.beginPath();ctx.arc(ox+ow/2,oy+oh/2,3,0,Math.PI*2);ctx.fill();
+   break;
+  case'building':
+   ctx.fillStyle='#2a3a4a';ctx.fillRect(ox,oy,ow,oh);
+   for(let r=0;r<10;r++)for(let c=0;c<4;c++){ctx.fillStyle=Math.random()>.5?'rgba(255,220,100,.4)':'rgba(100,150,200,.2)';ctx.fillRect(ox+ow*.1+c*ow*.22,oy+oh*.05+r*oh*.095,ow*.15,oh*.07)}
+   break;
+  case'neon':
+   ['#ff0066','#00ff88','#0088ff','#ffcc00'].forEach((col,j)=>{ctx.fillStyle=col;ctx.globalAlpha=.3;ctx.fillRect(ox+j*ow/4,oy+j*oh/4,ow/3,oh/6);ctx.globalAlpha=1});
+   break;
+  case'tree':
+   ctx.fillStyle='#3a2a1a';ctx.fillRect(ox+ow*.35,oy+oh*.4,ow*.3,oh*.6);
+   ctx.fillStyle='#2a4a2a';ctx.beginPath();ctx.arc(ox+ow/2,oy+oh*.3,ow*.6,0,Math.PI*2);ctx.fill();
+   break;
+  case'elephant':
+   ctx.fillStyle='#5a5a5a';ctx.beginPath();ctx.ellipse(ox+ow/2,oy+oh/2,ow/2,oh/3,0,0,Math.PI*2);ctx.fill();
+   ctx.fillRect(ox+ow*.15,oy+oh*.6,ow*.12,oh*.35);ctx.fillRect(ox+ow*.7,oy+oh*.6,ow*.12,oh*.35);
+   ctx.beginPath();ctx.ellipse(ox+ow*.1,oy+oh*.2,ow*.18,oh*.22,0,0,Math.PI*2);ctx.fill();
+   break;
+  case'chef':case'dancer':
+   ctx.fillStyle='#d4a574';ctx.beginPath();ctx.arc(ox+ow/2,oy+oh*.12,ow*.25,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=o.type==='chef'?'#ffffff':'#cc33ff';ctx.fillRect(ox+ow*.2,oy+oh*.25,ow*.6,oh*.5);
+   ctx.fillStyle='#2a2a3a';ctx.fillRect(ox+ow*.25,oy+oh*.75,ow*.2,oh*.25);ctx.fillRect(ox+ow*.55,oy+oh*.75,ow*.2,oh*.25);
+   break;
+  case'food':
+   ctx.fillStyle='#ff6633';ctx.beginPath();ctx.ellipse(ox+ow/2,oy+oh/2,ow/2,oh/2,0,0,Math.PI*2);ctx.fill();
+   break;
+  case'mic':
+   ctx.fillStyle='#4a4a4a';ctx.fillRect(ox,oy,ow,oh);ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(ox+ow/2,oy,ow*.8,0,Math.PI*2);ctx.fill();
+   break;
+  case'bg_lights':case'lights':
+   for(let j=0;j<6;j++){ctx.fillStyle=`hsla(${j*60},80%,60%,.2)`;ctx.beginPath();ctx.arc(ox+j*ow/6+ow/12,oy+oh/2,oh*.4,0,Math.PI*2);ctx.fill()}
+   break;
+  case'bg_wall':
+   ctx.fillStyle='#1a1a1a';ctx.fillRect(ox,oy,ow,oh);
+   break;
+ }
+});
+// Add noise texture
+const id=ctx.getImageData(0,0,C.width,C.height),d=id.data;
+for(let i=0;i<d.length;i+=4){const n=(Math.random()-.5)*8;d[i]+=n;d[i+1]+=n;d[i+2]+=n}
+ctx.putImageData(id,0,0);
+// Fake label
+if(!s.isReal){
+ ctx.fillStyle='rgba(255,50,100,.04)';
+ ctx.font='bold 14px monospace';
+ for(let y=20;y<h;y+=40)ctx.fillText('AI GENERATED',10+Math.sin(y*.1)*20,y);
+}
+}
+
+function startTimer(){
+state.timeLeft=15;
+clearInterval(state.timer);
+document.getElementById('timer').textContent='⏱ 15s';
+state.timer=setInterval(()=>{
+ state.timeLeft--;
+ document.getElementById('timer').textContent=`⏱ ${state.timeLeft}s`;
+ if(state.timeLeft<=5)document.getElementById('timer').style.color='var(--red)';
+ if(state.timeLeft<=0){clearInterval(state.timer);autoJudge()}
+},1000);
+}
+
+function autoJudge(){
+if(state.active){judge(scenes[state.round].isReal)}
+}
+
+function startGame(){
+state={round:0,score:0,streak:0,maxStreak:0,found:[],timer:null,timeLeft:15,active:true};
+document.getElementById('intro').style.display='none';
+document.getElementById('gameover').style.display='none';
+document.getElementById('gameArea').style.display='block';
+updateUI();loadRound();
+}
+
+function loadRound(){
+const s=scenes[state.round];
+state.found=[];state.active=true;
+document.getElementById('sceneLabel').textContent=`Scene ${state.round+1}: ${s.name}`;
+document.getElementById('clue').innerHTML=`🔍 <em>${s.clue}</em>`;
+document.getElementById('feedback').textContent='';
+document.getElementById('feedback').className='feedback';
+document.getElementById('btnReal').style.display='';
+document.getElementById('btnFake').style.display='';
+document.getElementById('btnNext').style.display='none';
+document.getElementById('btnReal').disabled=false;
+document.getElementById('btnFake').disabled=false;
+document.getElementById('hotspots').innerHTML='';
+document.getElementById('artifactList').style.display='none';
+document.getElementById('artifactItems').innerHTML='';
+document.getElementById('timer').style.color='var(--gold)';
+drawScene(s);
+startTimer();
+}
+
+document.getElementById('canvasWrap').addEventListener('click',(e)=>{
+if(!state.active)return;
+const r=e.currentTarget.getBoundingClientRect();
+const x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+const s=scenes[state.round];
+s.artifacts.forEach((a,i)=>{
+ if(state.found.includes(i))return;
+ const dx=x-a.x,dy=y-a.y;
+ if(Math.sqrt(dx*dx+dy*dy)<.08){
+  state.found.push(i);
+  const m=document.createElement('div');
+  m.className='hotspot-marker found';
+  m.style.left=a.x*100+'%';m.style.top=a.y*100+'%';
+  document.getElementById('hotspots').appendChild(m);
+  const item=document.createElement('div');
+  item.className='artifact-item';
+  item.innerHTML=`<span class="icon">${a.icon}</span><span>${a.label}</span>`;
+  document.getElementById('artifactItems').appendChild(item);
+  document.getElementById('artifactList').style.display='block';
+ }
+});
+});
+
+function judge(isReal){
+if(!state.active)return;
+state.active=false;
+clearInterval(state.timer);
+const s=scenes[state.round];
+const correct=(isReal===s.isReal);
+const timeBonus=Math.max(0,state.timeLeft)*10;
+const artifactBonus=state.found.length*50;
+if(correct){
+ const pts=100+timeBonus+artifactBonus;
+ state.score+=pts;state.streak++;
+ if(state.streak>state.maxStreak)state.maxStreak=state.streak;
+ document.getElementById('feedback').textContent=`✅ Correct! +${pts} pts ${artifactBonus?`(+${artifactBonus} artifact bonus)`:''} ${state.streak>=3?'🔥':''}`; 
+ document.getElementById('feedback').className='feedback correct';
+}else{
+ state.streak=0;
+ document.getElementById('feedback').textContent=`❌ Wrong! This was ${s.isReal?'REAL':'AI-GENERATED'}`;
+ document.getElementById('feedback').className='feedback wrong';
+}
+// Show missed artifacts
+if(!s.isReal){
+ s.artifacts.forEach((a,i)=>{
+  if(!state.found.includes(i)){
+   const m=document.createElement('div');
+   m.className='hotspot-marker missed';
+   m.style.left=a.x*100+'%';m.style.top=a.y*100+'%';
+   document.getElementById('hotspots').appendChild(m);
+   const item=document.createElement('div');
+   item.className='artifact-item';
+   item.innerHTML=`<span class="icon">❌</span><span>${a.label} <span class="badge">MISSED</span></span>`;
+   document.getElementById('artifactItems').appendChild(item);
+   document.getElementById('artifactList').style.display='block';
+  }
+ });
+}
+document.getElementById('btnReal').disabled=true;
+document.getElementById('btnFake').disabled=true;
+document.getElementById('btnNext').style.display='';
+updateUI();
+}
+
+function nextRound(){
+state.round++;
+if(state.round>=scenes.length){endGame();return}
+updateUI();loadRound();
+}
+
+function updateUI(){
+document.getElementById('score').textContent=state.score;
+document.getElementById('streak').textContent=state.streak+'🔥';
+document.getElementById('roundNum').textContent=`${Math.min(state.round+1,scenes.length)}/${scenes.length}`;
+document.getElementById('progress').style.width=((state.round)/scenes.length*100)+'%';
+}
+
+function endGame(){
+clearInterval(state.timer);
+document.getElementById('gameArea').style.display='none';
+document.getElementById('gameover').style.display='block';
+document.getElementById('finalScore').textContent=state.score;
+const pct=state.score/(scenes.length*250)*100;
+let rank,msg;
+if(pct>=80){rank='🏆 Master Detective';msg='Disney should hire you! You can spot AI fakes with ease.'}
+else if(pct>=60){rank='🥈 Senior Analyst';msg='Solid eye for detail. Most deepfakes won\'t fool you.'}
+else if(pct>=40){rank='🥉 Junior Agent';msg='You\'re learning! Keep practicing — AI is getting better every day.'}
+else{rank='🔰 Rookie';msg='The AI fooled you this time. Don\'t feel bad — Seedance 2.0 fooled Hollywood too.'}
+document.getElementById('rank').textContent=rank;
+document.getElementById('finalMsg').textContent=msg;
+}
+
+window.addEventListener('resize',()=>{if(state.active&&document.getElementById('gameArea').style.display!=='none')drawScene(scenes[state.round])});
+</script>
+</body>
+</html>
