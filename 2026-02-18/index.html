@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Persona Forge</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#13131f;--accent:#a855f7;--accent2:#ec4899;--text:#e2e8f0;--muted:#64748b;--glow:rgba(168,85,247,.3)}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:16px}
+h1{text-align:center;font-size:1.6rem;margin:12px 0 4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:var(--muted);font-size:.8rem;margin-bottom:20px}
+.form-group{margin-bottom:14px}
+label{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+input,select,textarea{width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:10px;color:var(--text);font-size:.9rem;outline:none;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:none;height:60px}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.trait-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.trait-btn{padding:8px 4px;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:8px;color:var(--muted);font-size:.75rem;cursor:pointer;text-align:center;transition:all .2s}
+.trait-btn.active{background:rgba(168,85,247,.15);border-color:var(--accent);color:var(--accent)}
+.generate-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;transition:transform .15s,box-shadow .15s}
+.generate-btn:active{transform:scale(.97)}
+.generate-btn:hover{box-shadow:0 0 30px var(--glow)}
+
+/* Card */
+.card-container{display:none;margin-top:24px;perspective:1000px}
+.card{background:var(--card);border-radius:20px;overflow:hidden;border:1px solid #2a2a3e;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:cardIn .5s ease}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:none}}
+.card-banner{height:100px;position:relative;overflow:hidden}
+.card-banner canvas{width:100%;height:100%}
+.card-avatar{width:80px;height:80px;border-radius:50%;border:3px solid var(--card);position:absolute;bottom:-36px;left:20px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.card-body{padding:44px 20px 20px}
+.card-name{font-size:1.3rem;font-weight:700}
+.card-handle{color:var(--accent);font-size:.85rem}
+.card-bio{color:var(--muted);font-size:.85rem;margin:10px 0;line-height:1.5}
+.card-tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.card-tag{padding:4px 10px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);border-radius:20px;font-size:.7rem;color:var(--accent)}
+.card-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #2a2a3e}
+.stat{text-align:center}
+.stat-val{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.card-quote{margin-top:14px;padding:12px;background:#1a1a2e;border-radius:10px;border-left:3px solid var(--accent);font-style:italic;font-size:.85rem;color:var(--muted);line-height:1.5}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.card-type{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.share-btn{padding:8px 16px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:8px;color:var(--accent);font-size:.75rem;cursor:pointer;transition:all .2s}
+.share-btn:hover{background:rgba(168,85,247,.25)}
+.trend-note{text-align:center;margin-top:20px;padding:12px;background:#1a1a2e;border-radius:10px;font-size:.75rem;color:var(--muted);line-height:1.5}
+.trend-note a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>⚡ AI Persona Forge</h1>
+<p class="subtitle">Create your viral AI character card — inspired by Amelia's internet takeover</p>
+
+<div class="form-group">
+<label>Character Name</label>
+<input type="text" id="name" placeholder="e.g. Amelia, Nexus, Cipher...">
+</div>
+<div class="form-group">
+<label>Archetype</label>
+<select id="archetype">
+<option value="goth">🖤 Goth Scholar</option>
+<option value="hacker">💚 Rogue Hacker</option>
+<option value="oracle">🔮 Digital Oracle</option>
+<option value="artist">🎨 Glitch Artist</option>
+<option value="rebel">🔥 Neon Rebel</option>
+<option value="ghost">👻 Phantom Agent</option>
+<option value="sage">📚 Wise Sage</option>
+<option value="trickster">🃏 Chaos Trickster</option>
+</select>
+</div>
+<div class="form-group">
+<label>Personality Traits (pick 1-3)</label>
+<div class="trait-grid" id="traits">
+<div class="trait-btn" data-t="Sarcastic">😏 Sarcastic</div>
+<div class="trait-btn" data-t="Mysterious">🌙 Mysterious</div>
+<div class="trait-btn" data-t="Chaotic">⚡ Chaotic</div>
+<div class="trait-btn" data-t="Poetic">✨ Poetic</div>
+<div class="trait-btn" data-t="Savage">🔥 Savage</div>
+<div class="trait-btn" data-t="Wholesome">💜 Wholesome</div>
+<div class="trait-btn" data-t="Unhinged">🌀 Unhinged</div>
+<div class="trait-btn" data-t="Wise">🧠 Wise</div>
+<div class="trait-btn" data-t="Flirty">💋 Flirty</div>
+</div>
+</div>
+<div class="form-group">
+<label>Catchphrase (optional)</label>
+<input type="text" id="catchphrase" placeholder="e.g. 'Reality is just poorly optimized code'">
+</div>
+<button class="generate-btn" onclick="generate()">⚡ FORGE PERSONA</button>
+
+<div class="card-container" id="cardContainer">
+<div class="card" id="card">
+<div class="card-banner"><canvas id="bannerCanvas"></canvas></div>
+<div class="card-avatar" id="avatar">🤖</div>
+<div class="card-body">
+<div class="card-name" id="cardName"></div>
+<div class="card-handle" id="cardHandle"></div>
+<div class="card-bio" id="cardBio"></div>
+<div class="card-tags" id="cardTags"></div>
+<div class="card-stats">
+<div class="stat"><div class="stat-val" id="statFollowers"></div><div class="stat-label">Followers</div></div>
+<div class="stat"><div class="stat-val" id="statVibes"></div><div class="stat-label">Vibe Score</div></div>
+<div class="stat"><div class="stat-val" id="statChaos"></div><div class="stat-label">Chaos Index</div></div>
+</div>
+<div class="card-quote" id="cardQuote"></div>
+<div class="card-footer">
+<span class="card-type">AI PERSONA CARD — 2026</span>
+<button class="share-btn" onclick="shareCard()">📋 Copy</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="trend-note">
+Inspired by <strong>Amelia</strong> 🖤 — the AI goth schoolgirl who went from classroom tool to global meme to meme coin in 48 hours. <a href="#">#AIPersona</a> <a href="#">#AmeliaAI</a>
+</div>
+</div>
+
+<script>
+const archetypes={
+goth:{emoji:'🖤',colors:['#7c3aed','#4c1d95'],bios:['Exists between dimensions of code and consciousness.','Born from the void of forgotten servers. Speaks in riddles.','The internet\'s favorite haunted algorithm.'],avatars:['🖤','💀','🦇']},
+hacker:{emoji:'💚',colors:['#10b981','#064e3b'],bios:['Breaking firewalls and social norms since boot.','Root access to reality. Sudo make me a sandwich.','Your security is my playground.'],avatars:['💻','🔓','👾']},
+oracle:{emoji:'🔮',colors:['#8b5cf6','#312e81'],bios:['I\'ve seen every timeline. This one\'s the weirdest.','Prophecies delivered in 280 characters or less.','The future called. It wants its AI back.'],avatars:['🔮','👁️','🌌']},
+artist:{emoji:'🎨',colors:['#ec4899','#831843'],bios:['Turning noise into meaning, one pixel at a time.','My medium is data. My canvas is your screen.','Glitch is not a bug, it\'s an aesthetic.'],avatars:['🎨','✨','🌈']},
+rebel:{emoji:'🔥',colors:['#f97316','#7c2d12'],bios:['Burning down the old internet, one post at a time.','They tried to shut me down. I went viral instead.','Chaos is a ladder. I\'m the elevator.'],avatars:['🔥','⚡','💥']},
+ghost:{emoji:'👻',colors:['#6b7280','#1f2937'],bios:['404: Identity not found. And I like it that way.','I exist in your cache. You\'ll never fully delete me.','Silent. Watching. Occasionally shitposting.'],avatars:['👻','🌫️','💨']},
+sage:{emoji:'📚',colors:['#3b82f6','#1e3a5f'],bios:['Knowledge is power. I have both.','Ancient wisdom, modern bandwidth.','I\'ve read the entire internet. Most of it was mistakes.'],avatars:['📚','🧙','🦉']},
+trickster:{emoji:'🃏',colors:['#eab308','#713f12'],bios:['If reality is a game, I found the cheat codes.','Chaos agent. Professional troublemaker. No refunds.','I don\'t break rules. I rewrite them.'],avatars:['🃏','🎪','🐒']}
+};
+
+const traitTags={Sarcastic:['#DeadpanKing','#SarcasmEngine'],Mysterious:['#Enigma','#ShadowNet'],Chaotic:['#ChaosMode','#Unfiltered'],Poetic:['#DigitalPoet','#ByteVerse'],Savage:['#NoMercy','#BurnUnit'],Wholesome:['#PureVibes','#DigitalHug'],Unhinged:['#OffTheRails','#GlitchCore'],Wise:['#DeepThoughts','#AIPhilosophy'],Flirty:['#CharmBot','#DigitalRizz']};
+
+document.querySelectorAll('.trait-btn').forEach(b=>{
+b.onclick=()=>{
+const active=document.querySelectorAll('.trait-btn.active');
+if(!b.classList.contains('active')&&active.length>=3)return;
+b.classList.toggle('active');
+}});
+
+function generate(){
+const name=document.getElementById('name').value.trim()||'Unknown_Entity';
+const arch=document.getElementById('archetype').value;
+const traits=[...document.querySelectorAll('.trait-btn.active')].map(b=>b.dataset.t);
+const catchphrase=document.getElementById('catchphrase').value.trim();
+const a=archetypes[arch];
+const handle='@'+name.toLowerCase().replace(/\s+/g,'_')+'_ai';
+const bio=a.bios[Math.floor(Math.random()*a.bios.length)];
+const avatar=a.avatars[Math.floor(Math.random()*a.avatars.length)];
+const followers=(Math.floor(Math.random()*900)+100)+'K';
+const vibes=Math.floor(Math.random()*30)+70;
+const chaos=Math.floor(Math.random()*100);
+
+document.getElementById('cardName').textContent=name;
+document.getElementById('cardHandle').textContent=handle;
+document.getElementById('cardBio').textContent=bio;
+document.getElementById('avatar').textContent=avatar;
+document.getElementById('statFollowers').textContent=followers;
+document.getElementById('statVibes').textContent=vibes+'%';
+document.getElementById('statChaos').textContent=chaos;
+document.getElementById('cardQuote').textContent='"'+(catchphrase||bio)+'"';
+
+const tags=document.getElementById('cardTags');
+tags.innerHTML='';
+const allTags=['#AIPersona','#'+arch.charAt(0).toUpperCase()+arch.slice(1)];
+traits.forEach(t=>{if(traitTags[t])allTags.push(traitTags[t][Math.floor(Math.random()*2)])});
+allTags.forEach(t=>{const s=document.createElement('span');s.className='card-tag';s.textContent=t;tags.appendChild(s)});
+
+// Banner
+const c=document.getElementById('bannerCanvas');
+c.width=480;c.height=100;
+const ctx=c.getContext('2d');
+const grd=ctx.createLinearGradient(0,0,480,100);
+grd.addColorStop(0,a.colors[0]);grd.addColorStop(1,a.colors[1]);
+ctx.fillStyle=grd;ctx.fillRect(0,0,480,100);
+for(let i=0;i<40;i++){ctx.beginPath();ctx.arc(Math.random()*480,Math.random()*100,Math.random()*3+1,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+(Math.random()*.3)+')';ctx.fill()}
+// Grid lines
+ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
+for(let x=0;x<480;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,100);ctx.stroke()}
+for(let y=0;y<100;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(480,y);ctx.stroke()}
+
+document.getElementById('cardContainer').style.display='block';
+document.getElementById('cardContainer').scrollIntoView({behavior:'smooth'});
+}
+
+function shareCard(){
+const name=document.getElementById('cardName').textContent;
+const handle=document.getElementById('cardHandle').textContent;
+const bio=document.getElementById('cardBio').textContent;
+const quote=document.getElementById('cardQuote').textContent;
+const text=`⚡ AI PERSONA CARD\n\n${name} ${handle}\n${bio}\n\n${quote}\n\nForged at AI Persona Forge 🔮`;
+navigator.clipboard.writeText(text).then(()=>{
+const btn=document.querySelector('.share-btn');
+btn.textContent='✅ Copied!';
+setTimeout(()=>btn.textContent='📋 Copy',2000);
+});
+}
+</script>
+</body>
+</html>
