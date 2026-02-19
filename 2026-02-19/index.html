@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroScan AI — Instant Brain MRI Analyzer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e17;--surface:#121828;--surface2:#1a2340;--accent:#00d4ff;--accent2:#7c3aed;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--text:#e2e8f0;--muted:#64748b;--glow:0 0 20px rgba(0,212,255,.3)}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:16px}
+header{text-align:center;padding:24px 0 16px}
+h1{font-size:1.6rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+.subtitle{color:var(--muted);font-size:.8rem;margin-top:4px}
+.badge{display:inline-block;background:rgba(0,212,255,.12);color:var(--accent);font-size:.65rem;padding:3px 10px;border-radius:20px;margin-top:8px;border:1px solid rgba(0,212,255,.2)}
+.scan-area{background:var(--surface);border-radius:16px;padding:20px;margin:16px 0;border:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
+.brain-display{width:100%;aspect-ratio:1;background:var(--bg);border-radius:12px;position:relative;overflow:hidden;cursor:pointer}
+.brain-svg{width:100%;height:100%;position:absolute;top:0;left:0}
+.scan-line{position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;z-index:2}
+.scanning .scan-line{opacity:1;animation:scanDown 2s ease-in-out infinite}
+@keyframes scanDown{0%{top:0}50%{top:100%}100%{top:0}}
+.scan-btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:16px;transition:all .3s;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:var(--glow)}
+.scan-btn:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(0,212,255,.5)}
+.scan-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.controls{display:flex;gap:8px;margin-top:12px}
+.ctrl-btn{flex:1;padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:var(--surface2);color:var(--text);font-size:.75rem;cursor:pointer;transition:all .2s}
+.ctrl-btn:hover{border-color:var(--accent)}
+.ctrl-btn.active{border-color:var(--accent);background:rgba(0,212,255,.1)}
+.results{margin-top:16px}
+.result-card{background:var(--surface);border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06);animation:slideUp .4s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.result-title{font-weight:700;font-size:.95rem}
+.confidence{font-size:.75rem;padding:3px 8px;border-radius:8px;font-weight:600}
+.conf-high{background:rgba(34,197,94,.15);color:var(--green)}
+.conf-med{background:rgba(234,179,8,.15);color:var(--yellow)}
+.conf-low{background:rgba(239,68,68,.15);color:var(--red)}
+.finding-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.82rem}
+.finding-row:last-child{border:none}
+.finding-label{color:var(--muted)}
+.bar-bg{width:100px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:8px}
+.bar-fill{height:100%;border-radius:3px;transition:width 1s ease-out}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.stat{background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.stat-val{font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:.6rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.urgency{display:flex;align-items:center;gap:8px;padding:12px;border-radius:10px;margin-top:10px;font-size:.85rem;font-weight:600}
+.urgency-routine{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--green)}
+.urgency-follow{background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.2);color:var(--yellow)}
+.urgency-urgent{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red)}
+.history{margin-top:20px}
+.history h3{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+.history-item{display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:6px;font-size:.78rem;cursor:pointer;border:1px solid rgba(255,255,255,.04);transition:all .2s}
+.history-item:hover{border-color:var(--accent)}
+footer{text-align:center;padding:24px 0;color:var(--muted);font-size:.65rem}
+footer a{color:var(--accent);text-decoration:none}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.view-selector{display:flex;gap:6px;margin-bottom:12px}
+.view-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:.7rem;cursor:pointer;transition:all .2s}
+.view-btn.active{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>🧠 NeuroScan AI</h1>
+<div class="subtitle">Instant Brain MRI Analysis • 50+ Conditions • 97.5% Accuracy</div>
+<div class="badge">Inspired by University of Michigan AI Foundation Model</div>
+</header>
+
+<div class="stat-grid">
+<div class="stat"><div class="stat-val" id="scanCount">0</div><div class="stat-label">Scans Today</div></div>
+<div class="stat"><div class="stat-val" id="avgTime">0.0s</div><div class="stat-label">Avg Speed</div></div>
+<div class="stat"><div class="stat-val" id="accuracy">97.5%</div><div class="stat-label">Accuracy</div></div>
+</div>
+
+<div class="scan-area">
+<div class="view-selector">
+<button class="view-btn active" data-view="axial">Axial</button>
+<button class="view-btn" data-view="sagittal">Sagittal</button>
+<button class="view-btn" data-view="coronal">Coronal</button>
+</div>
+<div class="brain-display" id="brainDisplay">
+<svg class="brain-svg" id="brainSvg" viewBox="0 0 400 400"></svg>
+<div class="scan-line" id="scanLine"></div>
+</div>
+<button class="scan-btn" id="scanBtn" onclick="startScan()">⚡ Analyze MRI Scan</button>
+<div class="controls">
+<button class="ctrl-btn" onclick="loadSample('normal')">Normal Brain</button>
+<button class="ctrl-btn" onclick="loadSample('tumor')">Tumor Case</button>
+<button class="ctrl-btn" onclick="loadSample('stroke')">Stroke Case</button>
+<button class="ctrl-btn" onclick="loadSample('ms')">MS Case</button>
+</div>
+</div>
+
+<div class="results" id="results"></div>
+<div class="history" id="history"></div>
+</div>
+<footer>Built for <a href="https://github.com/Johnsonbros/daily-ai-trends">Daily AI Trends</a> • Feb 19, 2026<br>Simulated demo — not medical advice</footer>
+
+<script>
+const CONDITIONS={
+normal:{name:"Normal Brain",findings:[{label:"Gray Matter Volume",val:98,status:"normal"},{label:"White Matter Integrity",val:96,status:"normal"},{label:"Ventricular Size",val:94,status:"normal"},{label:"Hippocampal Volume",val:97,status:"normal"},{label:"Cortical Thickness",val:95,status:"normal"}],diagnosis:"No significant abnormalities detected",urgency:"routine",confidence:98.2,regions:[]},
+tumor:{name:"Glioblastoma Detected",findings:[{label:"Mass Effect",val:87,status:"abnormal"},{label:"Enhancement Pattern",val:92,status:"abnormal"},{label:"Edema Extent",val:78,status:"warning"},{label:"Midline Shift",val:65,status:"abnormal"},{label:"Necrosis Present",val:83,status:"abnormal"}],diagnosis:"High-grade glioma (GBM) — right temporal lobe, 3.2cm, with surrounding edema",urgency:"urgent",confidence:96.8,regions:[{x:280,y:160,r:35,color:"rgba(239,68,68,.4)"}]},
+stroke:{name:"Acute Ischemic Stroke",findings:[{label:"DWI Restriction",val:94,status:"abnormal"},{label:"Territory Affected",val:88,status:"warning"},{label:"Hemorrhage Check",val:97,status:"normal"},{label:"Penumbra Volume",val:72,status:"warning"},{label:"Core Infarct Size",val:81,status:"abnormal"}],diagnosis:"Acute MCA territory infarct — left hemisphere, onset <6h, tPA candidate",urgency:"urgent",confidence:97.1,regions:[{x:140,y:180,r:45,color:"rgba(234,179,8,.35)"}]},
+ms:{name:"Multiple Sclerosis",findings:[{label:"Periventricular Lesions",val:91,status:"abnormal"},{label:"Dawson Fingers",val:86,status:"abnormal"},{label:"Spinal Cord Lesions",val:74,status:"warning"},{label:"Black Holes",val:68,status:"warning"},{label:"Enhancement (Active)",val:82,status:"abnormal"}],diagnosis:"Relapsing-remitting MS — 12 T2 lesions, 3 enhancing (active demyelination)",urgency:"follow",confidence:94.5,regions:[{x:200,y:120,r:12,color:"rgba(124,58,237,.5)"},{x:170,y:160,r:10,color:"rgba(124,58,237,.5)"},{x:230,y:155,r:9,color:"rgba(124,58,237,.5)"},{x:190,y:200,r:11,color:"rgba(124,58,237,.5)"}]}
+};
+let currentCase="normal",scanCount=0,totalTime=0,view="axial",scanHistory=[];
+function drawBrain(highlights=[]){
+const svg=document.getElementById("brainSvg");
+const v=view;
+let paths="";
+if(v==="axial"){
+paths=`<ellipse cx="200" cy="200" rx="140" ry="160" fill="#1a1a2e" stroke="#2a3a5c" stroke-width="1.5"/>
+<path d="M200 40 Q200 200 200 360" stroke="#2a3a5c" stroke-width="1" fill="none"/>
+<ellipse cx="200" cy="200" rx="25" ry="45" fill="#0f1525" stroke="#2a3a5c" stroke-width="1"/>
+<path d="M80 120 Q120 100 160 120 Q140 160 100 150Z" fill="#1e2845" stroke="#2a3a5c" stroke-width=".5"/>
+<path d="M320 120 Q280 100 240 120 Q260 160 300 150Z" fill="#1e2845" stroke="#2a3a5c" stroke-width=".5"/>
+<path d="M80 280 Q120 300 160 280 Q140 240 100 250Z" fill="#1e2845" stroke="#2a3a5c" stroke-width=".5"/>
+<path d="M320 280 Q280 300 240 280 Q260 240 300 250Z" fill="#1e2845" stroke="#2a3a5c" stroke-width=".5"/>
+${Array.from({length:8},(_,i)=>`<path d="M${70+i*5} ${80+i*20} Q200 ${60+i*15} ${330-i*5} ${80+i*20}" fill="none" stroke="#2a3a5c" stroke-width=".4" opacity=".5"/>`).join("")}`;
+}else if(v==="sagittal"){
+paths=`<ellipse cx="200" cy="190" rx="120" ry="150" fill="#1a1a2e" stroke="#2a3a5c" stroke-width="1.5"/>
+<path d="M120 100 Q200 60 280 100 Q300 160 280 220 Q240 260 200 280 Q160 260 120 220 Q100 160 120 100Z" fill="#1e2845" stroke="#2a3a5c" stroke-width="1"/>
+<path d="M160 260 Q200 300 240 260 Q230 290 200 310 Q170 290 160 260Z" fill="#222e50" stroke="#2a3a5c" stroke-width=".8"/>
+<ellipse cx="200" cy="320" rx="30" ry="15" fill="#1a1a2e" stroke="#2a3a5c" stroke-width=".8"/>
+<path d="M180 140 Q200 120 220 140 Q210 180 200 200 Q190 180 180 140Z" fill="#0f1525" stroke="#2a3a5c" stroke-width=".5"/>`;
+}else{
+paths=`<ellipse cx="200" cy="200" rx="130" ry="160" fill="#1a1a2e" stroke="#2a3a5c" stroke-width="1.5"/>
+<path d="M200 40 L200 360" stroke="#2a3a5c" stroke-width="1"/>
+<path d="M70 200 L330 200" stroke="#2a3a5c" stroke-width=".5" opacity=".3"/>
+<ellipse cx="160" cy="200" rx="20" ry="35" fill="#0f1525" stroke="#2a3a5c" stroke-width="1"/>
+<ellipse cx="240" cy="200" rx="20" ry="35" fill="#0f1525" stroke="#2a3a5c" stroke-width="1"/>
+<path d="M80 120 Q200 80 320 120" fill="none" stroke="#2a3a5c" stroke-width=".5"/>
+<path d="M80 280 Q200 320 320 280" fill="none" stroke="#2a3a5c" stroke-width=".5"/>`;
+}
+highlights.forEach(h=>{
+paths+=`<circle cx="${h.x}" cy="${h.y}" r="${h.r}" fill="${h.color}" stroke="${h.color.replace(/[\d.]+\)$/,'.8)')}" stroke-width="2" class="pulse"/>
+<circle cx="${h.x}" cy="${h.y}" r="${h.r+8}" fill="none" stroke="${h.color.replace(/[\d.]+\)$/,'.3)')}" stroke-width="1" stroke-dasharray="4 4" class="pulse"/>`;
+});
+svg.innerHTML=paths;
+}
+function loadSample(type){currentCase=type;drawBrain();document.getElementById("results").innerHTML="";document.querySelectorAll(".ctrl-btn").forEach(b=>b.classList.remove("active"));event.target.classList.add("active")}
+function startScan(){
+const btn=document.getElementById("scanBtn");
+const area=document.querySelector(".scan-area");
+btn.disabled=true;btn.textContent="🔄 Analyzing...";
+area.classList.add("scanning");
+const dur=800+Math.random()*1400;
+const c=CONDITIONS[currentCase];
+setTimeout(()=>{
+area.classList.remove("scanning");
+btn.disabled=false;btn.textContent="⚡ Analyze MRI Scan";
+scanCount++;totalTime+=dur;
+document.getElementById("scanCount").textContent=scanCount;
+document.getElementById("avgTime").textContent=(totalTime/scanCount/1000).toFixed(1)+"s";
+drawBrain(c.regions);
+renderResults(c,dur);
+scanHistory.unshift({name:c.name,time:new Date().toLocaleTimeString(),speed:(dur/1000).toFixed(1)+"s",urgency:c.urgency});
+renderHistory();
+},dur);
+}
+function renderResults(c,dur){
+const urgMap={routine:["✅ Routine — No immediate action","urgency-routine"],follow:["⚠️ Follow-up recommended within 2 weeks","urgency-follow"],urgent:["🚨 URGENT — Immediate specialist review","urgency-urgent"]};
+const confClass=c.confidence>95?"conf-high":c.confidence>85?"conf-med":"conf-low";
+let html=`<div class="result-card">
+<div class="result-header"><span class="result-title">${c.name}</span><span class="confidence ${confClass}">${c.confidence}%</span></div>
+<div style="font-size:.82rem;color:var(--muted);margin-bottom:12px">${c.diagnosis}</div>
+${c.findings.map(f=>{
+const col=f.status==="normal"?"var(--green)":f.status==="warning"?"var(--yellow)":"var(--red)";
+return`<div class="finding-row"><span class="finding-label">${f.label}</span><span style="color:${col};font-weight:600">${f.val}%</span></div><div class="bar-bg"><div class="bar-fill" style="width:${f.val}%;background:${col}"></div></div>`;
+}).join("")}
+<div class="urgency ${urgMap[c.urgency][1]}">${urgMap[c.urgency][0]}</div>
+<div style="font-size:.7rem;color:var(--muted);margin-top:8px;text-align:right">Analyzed in ${(dur/1000).toFixed(1)}s • ${new Date().toLocaleTimeString()}</div>
+</div>`;
+document.getElementById("results").innerHTML=html;
+}
+function renderHistory(){
+if(!scanHistory.length)return;
+let h=`<h3>📋 Scan History</h3>`;
+scanHistory.slice(0,5).forEach(s=>{
+h+=`<div class="history-item"><span>${s.name}</span><span style="color:var(--muted)">${s.speed} • ${s.time}</span></div>`;
+});
+document.getElementById("history").innerHTML=h;
+}
+document.querySelectorAll(".view-btn").forEach(b=>{
+b.addEventListener("click",()=>{
+document.querySelectorAll(".view-btn").forEach(v=>v.classList.remove("active"));
+b.classList.add("active");view=b.dataset.view;drawBrain();
+});
+});
+drawBrain();
+</script>
+</body>
+</html>
