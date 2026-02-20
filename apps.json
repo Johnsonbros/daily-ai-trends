@@ -16,5 +16,6 @@
   {"date": "2026-02-16", "name": "AI Policy Globe", "trend": "India AI Impact Summit 2026 kicks off in New Delhi — world leaders gather to shape global AI governance as regulation diverges across 20+ nations", "tag": "Policy/Interactive", "path": "2026-02-16/index.html"},
   {"date": "2026-02-17", "name": "Deepfake Detective", "trend": "Disney threatens ByteDance over Seedance 2.0 deepfakes — hyperrealistic AI videos of Tom Cruise & Brad Pitt spark copyright war", "tag": "Detection/Game", "path": "2026-02-17/index.html"},
   {"date": "2026-02-18", "name": "AI Persona Forge", "trend": "AI 'goth schoolgirl' Amelia goes from classroom tool to global meme to meme coin — sparking the AI persona creator trend", "tag": "Character/Creative", "path": "2026-02-18/index.html"},
-  {"date": "2026-02-19", "name": "NeuroScan AI", "trend": "University of Michigan AI reads brain MRIs in seconds — diagnoses 50+ neurological conditions with 97.5% accuracy", "tag": "Medical/Interactive", "path": "2026-02-19/index.html"}
+  {"date": "2026-02-19", "name": "NeuroScan AI", "trend": "University of Michigan AI reads brain MRIs in seconds — diagnoses 50+ neurological conditions with 97.5% accuracy", "tag": "Medical/Interactive", "path": "2026-02-19/index.html"},
+  {"date": "2026-02-20", "name": "StreamVox", "trend": "JioHotstar partners with OpenAI to launch ChatGPT-powered voice assistant for conversational streaming — talk to your TV to find what to watch", "tag": "Voice/Streaming", "path": "2026-02-20/index.html"}
 ]

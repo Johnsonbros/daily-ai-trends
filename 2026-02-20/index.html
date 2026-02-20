@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamVox — Voice-Powered Streaming</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#14141f;--accent:#7c3aed;--accent2:#a855f7;--text:#e2e8f0;--dim:#64748b;--glow:rgba(124,58,237,.3);--green:#10b981;--red:#ef4444;--orange:#f59e0b}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e1e2e}
+.logo{font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2),#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo span{font-size:12px;font-weight:400;-webkit-text-fill-color:var(--dim);display:block;margin-top:-2px}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.chat-area{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:85%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.5;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.ai{background:var(--card);border:1px solid #1e1e2e;align-self:flex-start;border-bottom-left-radius:4px}
+.msg.user{background:linear-gradient(135deg,var(--accent),var(--accent2));align-self:flex-end;border-bottom-right-radius:4px;color:#fff}
+.msg .label{font-size:11px;color:var(--dim);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.msg.ai .label{color:var(--accent2)}
+.cards{display:flex;gap:10px;overflow-x:auto;padding:8px 0;scrollbar-width:none}
+.cards::-webkit-scrollbar{display:none}
+.card{min-width:140px;background:#1a1a2e;border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;flex-shrink:0}
+.card:hover{transform:scale(1.03);box-shadow:0 0 20px var(--glow)}
+.card img{width:100%;height:85px;object-fit:cover;display:block}
+.card .info{padding:10px}
+.card .title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta{font-size:11px;color:var(--dim);margin-top:3px}
+.card .match{font-size:10px;color:var(--green);margin-top:4px;font-weight:600}
+.input-area{padding:12px 20px;border-top:1px solid #1e1e2e;display:flex;gap:10px;align-items:center;background:var(--bg)}
+.input-area input{flex:1;background:var(--card);border:1px solid #2a2a3e;border-radius:24px;padding:12px 18px;color:var(--text);font-size:14px;outline:none;transition:border .2s}
+.input-area input:focus{border-color:var(--accent)}
+.mic-btn{width:48px;height:48px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;position:relative}
+.mic-btn:hover{transform:scale(1.08);box-shadow:0 0 20px var(--glow)}
+.mic-btn.recording{background:linear-gradient(135deg,var(--red),#dc2626);animation:micPulse 1s infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 14px rgba(239,68,68,0)}}
+.wave{display:none;align-items:center;gap:3px;margin-left:8px}
+.wave.active{display:flex}
+.wave span{width:3px;background:var(--accent2);border-radius:2px;animation:waveAnim .8s ease-in-out infinite}
+.wave span:nth-child(1){height:8px;animation-delay:0s}
+.wave span:nth-child(2){height:16px;animation-delay:.1s}
+.wave span:nth-child(3){height:12px;animation-delay:.2s}
+.wave span:nth-child(4){height:20px;animation-delay:.3s}
+.wave span:nth-child(5){height:10px;animation-delay:.4s}
+@keyframes waveAnim{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1.2)}}
+.genre-pills{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;border:1px solid #2a2a3e;background:var(--card);color:var(--dim)}
+.pill:hover,.pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.now-playing{background:linear-gradient(135deg,#1a1a2e,#0f0f1a);border:1px solid var(--accent);border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.now-playing img{width:55px;height:55px;border-radius:10px;object-fit:cover}
+.now-playing .np-info{flex:1}
+.now-playing .np-title{font-size:14px;font-weight:700}
+.now-playing .np-sub{font-size:12px;color:var(--dim);margin-top:2px}
+.now-playing .np-bar{height:3px;background:#2a2a3e;border-radius:2px;margin-top:8px;overflow:hidden}
+.now-playing .np-progress{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:35%;border-radius:2px;animation:progress 8s linear infinite}
+@keyframes progress{to{width:100%}}
+.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.sug{padding:8px 14px;background:var(--card);border:1px solid #2a2a3e;border-radius:20px;font-size:12px;color:var(--accent2);cursor:pointer;transition:all .2s}
+.sug:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.typing{display:flex;gap:4px;padding:8px 0}
+.typing span{width:6px;height:6px;background:var(--accent2);border-radius:50%;animation:typing .8s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes typing{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">StreamVox<span>AI Voice Assistant for Streaming</span></div>
+    <div class="status-dot" id="statusDot"></div>
+  </header>
+  <div class="chat-area" id="chat"></div>
+  <div class="input-area">
+    <input type="text" id="textInput" placeholder="Try: 'Something like Stranger Things'" />
+    <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span></div>
+    <button class="mic-btn" id="micBtn" title="Hold to talk">🎙️</button>
+  </div>
+</div>
+<script>
+const chat=document.getElementById('chat'),textInput=document.getElementById('textInput'),micBtn=document.getElementById('micBtn'),wave=document.getElementById('wave');
+const MOVIES=[
+  {t:"Neon Abyss",g:"Sci-Fi",y:2026,r:"94%",img:"https://placehold.co/280x170/7c3aed/ffffff?text=Neon+Abyss",d:"A hacker discovers AI is dreaming"},
+  {t:"The Last Algorithm",g:"Thriller",y:2025,r:"91%",img:"https://placehold.co/280x170/a855f7/ffffff?text=Last+Algorithm",d:"Race to stop a sentient trading AI"},
+  {t:"Whisper Protocol",g:"Mystery",y:2026,r:"88%",img:"https://placehold.co/280x170/ec4899/ffffff?text=Whisper+Protocol",d:"Voice AI witnesses a crime"},
+  {t:"Orbit",g:"Sci-Fi",y:2026,r:"96%",img:"https://placehold.co/280x170/6366f1/ffffff?text=Orbit",d:"Solo astronaut befriends ship AI"},
+  {t:"Redline",g:"Action",y:2025,r:"87%",img:"https://placehold.co/280x170/ef4444/ffffff?text=Redline",d:"Street racing with AI co-pilots"},
+  {t:"Hollow Mind",g:"Horror",y:2026,r:"90%",img:"https://placehold.co/280x170/1e1e2e/a855f7?text=Hollow+Mind",d:"AI therapy app goes terrifyingly wrong"},
+  {t:"Glass Garden",g:"Drama",y:2025,r:"93%",img:"https://placehold.co/280x170/10b981/ffffff?text=Glass+Garden",d:"Woman grows a digital consciousness"},
+  {t:"Binary Love",g:"Romance",y:2026,r:"85%",img:"https://placehold.co/280x170/f59e0b/ffffff?text=Binary+Love",d:"Two AI researchers fall for each other"},
+  {t:"Frostbyte",g:"Action",y:2026,r:"89%",img:"https://placehold.co/280x170/3b82f6/ffffff?text=Frostbyte",d:"Arctic base AI goes rogue"},
+  {t:"The Loop",g:"Sci-Fi",y:2025,r:"92%",img:"https://placehold.co/280x170/8b5cf6/ffffff?text=The+Loop",d:"Time loop powered by quantum AI"},
+];
+const GENRES=["All","Sci-Fi","Thriller","Action","Horror","Drama","Romance","Mystery"];
+const QUICK=["🎬 What's trending?","😱 Something scary","🚀 Best sci-fi this year","💕 A good date night movie","🧠 Mind-bending plot twists"];
+const RESPONSES={
+  greeting:[
+    ()=>{
+      let h='<div class="label">🎙️ StreamVox</div>Hey! I\'m StreamVox, your AI streaming companion. Just tell me what mood you\'re in and I\'ll find the perfect watch.<div class="suggestions" style="margin-top:10px">'+QUICK.map(q=>`<div class="sug" onclick="sendMsg('${q.slice(2)}')">${q}</div>`).join('')+'</div>';
+      return h;
+    }
+  ],
+  trending:[
+    ()=>'<div class="label">🔥 Trending Now</div>Here\'s what everyone\'s watching this week:<div class="cards">'+MOVIES.slice(0,4).map(m=>`<div class="card" onclick="sendMsg('Tell me about ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.g} · ${m.y}</div><div class="match">⭐ ${m.r} match</div></div></div>`).join('')+'</div>'
+  ],
+  scary:[
+    ()=>{let s=MOVIES.filter(m=>m.g==='Horror'||m.t==='Frostbyte');return '<div class="label">😱 Scary picks</div>Oh you want chills? Try these:<div class="cards">'+s.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.d}</div><div class="match">👻 Perfect for scares</div></div></div>`).join('')+'</div>'}
+  ],
+  scifi:[
+    ()=>{let s=MOVIES.filter(m=>m.g==='Sci-Fi');return '<div class="label">🚀 Sci-Fi Picks</div>Great taste! Here are the best sci-fi titles:<div class="cards">'+s.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.d}</div><div class="match">⭐ ${m.r} match</div></div></div>`).join('')+'</div>'}
+  ],
+  date:[
+    ()=>{let s=MOVIES.filter(m=>['Romance','Drama'].includes(m.g));return '<div class="label">💕 Date Night</div>Cozy up with one of these:<div class="cards">'+s.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.d}</div><div class="match">❤️ Perfect for two</div></div></div>`).join('')+'</div>'}
+  ],
+  mind:[
+    ()=>{let s=MOVIES.filter(m=>['Sci-Fi','Thriller','Mystery'].includes(m.g)).slice(0,4);return '<div class="label">🧠 Mind-Benders</div>Prepare to have your brain twisted:<div class="cards">'+s.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.d}</div><div class="match">🌀 Will blow your mind</div></div></div>`).join('')+'</div>'}
+  ]
+};
+function getAbout(name){let m=MOVIES.find(x=>name.toLowerCase().includes(x.t.toLowerCase()));if(!m)return null;return m;}
+function addMsg(html,type){const d=document.createElement('div');d.className='msg '+type;d.innerHTML=html;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+function showTyping(){const d=document.createElement('div');d.className='msg ai';d.id='typing';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+function hideTyping(){const t=document.getElementById('typing');if(t)t.remove()}
+function respond(text){
+  const t=text.toLowerCase();
+  let resp=null;
+  if(t.includes('play ')){
+    let m=getAbout(t.replace('play ',''));
+    if(m){resp=`<div class="label">▶️ Now Playing</div><div class="now-playing"><img src="${m.img}" alt="${m.t}"><div class="np-info"><div class="np-title">${m.t}</div><div class="np-sub">${m.g} · ${m.y} · ${m.r} match</div><div class="np-bar"><div class="np-progress"></div></div></div></div><div style="margin-top:8px;font-size:13px;color:var(--dim)">${m.d}. Enjoy! 🍿</div>`;}
+  }
+  if(!resp&&(t.includes('tell me about'))){
+    let m=getAbout(t);
+    if(m){resp=`<div class="label">📖 About</div><strong>${m.t}</strong> (${m.y})<br><br>${m.d}.<br><br>Genre: ${m.g} · Rating: ${m.r}<br><br><div class="sug" onclick="sendMsg('Play ${m.t}')" style="display:inline-block">▶️ Play now</div>`;}
+  }
+  if(!resp){
+    if(t.includes('trend')||t.includes('popular')||t.includes('hot')||t.includes('what'))resp=RESPONSES.trending[0]();
+    else if(t.includes('scar')||t.includes('horror')||t.includes('creep'))resp=RESPONSES.scary[0]();
+    else if(t.includes('sci')||t.includes('space')||t.includes('future'))resp=RESPONSES.scifi[0]();
+    else if(t.includes('date')||t.includes('roman')||t.includes('love')||t.includes('cozy'))resp=RESPONSES.date[0]();
+    else if(t.includes('mind')||t.includes('twist')||t.includes('complex')||t.includes('think'))resp=RESPONSES.mind[0]();
+    else if(t.includes('action')||t.includes('fast')||t.includes('thrill')){
+      let s=MOVIES.filter(m=>['Action','Thriller'].includes(m.g));
+      resp='<div class="label">💥 Action picks</div>Buckle up:<div class="cards">'+s.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.d}</div><div class="match">🔥 High adrenaline</div></div></div>`).join('')+'</div>';
+    }
+    else if(t.includes('stranger things')||t.includes('like')){
+      let s=MOVIES.filter(m=>['Sci-Fi','Horror','Mystery'].includes(m.g)).slice(0,3);
+      resp='<div class="label">🔮 Similar vibes</div>If you liked that, you\'ll love these:<div class="cards">'+s.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.d}</div><div class="match">✨ Great match</div></div></div>`).join('')+'</div>';
+    }
+    else{
+      let picks=MOVIES.sort(()=>Math.random()-.5).slice(0,3);
+      resp='<div class="label">🎬 For you</div>Hmm, how about these?<div class="cards">'+picks.map(m=>`<div class="card" onclick="sendMsg('Play ${m.t}')"><img src="${m.img}" alt="${m.t}"><div class="info"><div class="title">${m.t}</div><div class="meta">${m.g} · ${m.y}</div><div class="match">⭐ ${m.r} match</div></div></div>`).join('')+'</div>';
+    }
+  }
+  showTyping();
+  setTimeout(()=>{hideTyping();addMsg(resp,'ai')},800+Math.random()*600);
+}
+function sendMsg(text){
+  if(!text.trim())return;
+  addMsg(text,'user');
+  textInput.value='';
+  respond(text);
+}
+textInput.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg(textInput.value)});
+let recording=false;
+micBtn.addEventListener('click',()=>{
+  recording=!recording;
+  micBtn.classList.toggle('recording',recording);
+  wave.classList.toggle('active',recording);
+  if(recording){
+    if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      window._rec=new SR();window._rec.lang='en-US';
+      window._rec.onresult=e=>{const t=e.results[0][0].transcript;textInput.value=t;sendMsg(t);recording=false;micBtn.classList.remove('recording');wave.classList.remove('active')};
+      window._rec.onerror=()=>{recording=false;micBtn.classList.remove('recording');wave.classList.remove('active')};
+      window._rec.onend=()=>{recording=false;micBtn.classList.remove('recording');wave.classList.remove('active')};
+      window._rec.start();
+    } else {
+      setTimeout(()=>{recording=false;micBtn.classList.remove('recording');wave.classList.remove('active');
+        const demos=["What's trending right now","Something scary for tonight","Best sci-fi this year"];
+        const pick=demos[Math.floor(Math.random()*demos.length)];sendMsg(pick);},2000);
+    }
+  } else {if(window._rec)window._rec.stop();}
+});
+// Init greeting
+setTimeout(()=>addMsg(RESPONSES.greeting[0](),'ai'),500);
+</script>
+</body>
+</html>
