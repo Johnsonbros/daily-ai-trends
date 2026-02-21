@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Arms Race — Capital Expenditure Tracker 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#12121a;--accent:#00d4ff;--warn:#ff6b35;--danger:#ff3366;--green:#00ff88;--purple:#a855f7;--text:#e0e0e0;--dim:#666}
+body{font-family:'SF Pro Display',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.hero{text-align:center;padding:40px 20px 20px;position:relative}
+.hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(0,212,255,.08),transparent);pointer-events:none}
+h1{font-size:2.2em;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px}
+.subtitle{color:var(--dim);margin-top:6px;font-size:.95em}
+.total-bar{margin:24px auto;max-width:600px;background:var(--card);border-radius:16px;padding:20px 24px;border:1px solid #1a1a2e}
+.total-label{font-size:.8em;color:var(--dim);text-transform:uppercase;letter-spacing:2px}
+.total-num{font-size:3em;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;margin:4px 0}
+.total-sub{font-size:.85em;color:var(--warn)}
+.grid{display:grid;grid-template-columns:1fr;gap:16px;padding:0 16px 16px;max-width:700px;margin:0 auto}
+@media(min-width:500px){.grid{grid-template-columns:1fr 1fr}}
+.company-card{background:var(--card);border-radius:16px;padding:20px;border:1px solid #1a1a2e;position:relative;overflow:hidden;transition:transform .2s}
+.company-card:hover{transform:translateY(-2px)}
+.company-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0}
+.company-card[data-co="google"]::after{background:linear-gradient(90deg,#4285f4,#34a853,#fbbc05,#ea4335)}
+.company-card[data-co="amazon"]::after{background:linear-gradient(90deg,#ff9900,#ffcc00)}
+.company-card[data-co="meta"]::after{background:linear-gradient(90deg,#0668e1,#00c2ff)}
+.company-card[data-co="microsoft"]::after{background:linear-gradient(90deg,#00a4ef,#7fba00,#f25022,#ffb900)}
+.company-card[data-co="apple"]::after{background:linear-gradient(90deg,#a2aaad,#555)}
+.co-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.co-name{font-size:1.1em;font-weight:700}
+.co-capex{font-size:1.6em;font-weight:800;font-variant-numeric:tabular-nums}
+.bar-wrap{background:#1a1a2e;border-radius:8px;height:28px;overflow:hidden;position:relative;margin:8px 0}
+.bar-fill{height:100%;border-radius:8px;transition:width 1.5s cubic-bezier(.22,1,.36,1);width:0;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:.7em;font-weight:700;color:#000}
+.bar-label{display:flex;justify-content:space-between;font-size:.75em;color:var(--dim);margin-top:4px}
+.stat-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.stat{background:#1a1a2e;border-radius:8px;padding:6px 10px;font-size:.75em;flex:1;min-width:80px}
+.stat span{display:block;color:var(--dim);font-size:.85em;margin-bottom:2px}
+.stat b{color:var(--text);font-size:1.1em}
+.context{max-width:700px;margin:20px auto;padding:0 16px}
+.context-card{background:var(--card);border-radius:16px;padding:20px;border:1px solid #1a1a2e}
+.context-card h3{font-size:1em;color:var(--accent);margin-bottom:10px}
+.context-card p{font-size:.85em;line-height:1.6;color:var(--dim)}
+.ticker{background:#1a1a2e;padding:10px 0;overflow:hidden;margin-top:20px;border-top:1px solid #222;border-bottom:1px solid #222}
+.ticker-inner{display:flex;gap:40px;animation:scroll 30s linear infinite;white-space:nowrap}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{font-size:.8em;color:var(--dim)}
+.ticker-item b{color:var(--accent)}
+.comparison{max-width:700px;margin:16px auto;padding:0 16px}
+.comparison h3{font-size:.9em;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;text-align:center}
+.comp-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.85em}
+.comp-label{width:100px;text-align:right;color:var(--dim);flex-shrink:0}
+.comp-bar-wrap{flex:1;background:#1a1a2e;border-radius:6px;height:20px;overflow:hidden}
+.comp-bar{height:100%;border-radius:6px;transition:width 2s cubic-bezier(.22,1,.36,1);width:0}
+.comp-val{width:60px;font-weight:700;font-size:.9em}
+footer{text-align:center;padding:30px;color:var(--dim);font-size:.75em}
+</style>
+</head>
+<body>
+
+<div class="hero">
+<h1>💰 AI Arms Race 2026</h1>
+<p class="subtitle">Big Tech is betting the farm on AI infrastructure</p>
+</div>
+
+<div class="total-bar">
+<div class="total-label">Combined AI CapEx Announced — 2026</div>
+<div class="total-num" id="totalCounter">$0B</div>
+<div class="total-sub">⚠️ Exceeds combined 2025 cash flow of these companies</div>
+</div>
+
+<div class="ticker">
+<div class="ticker-inner" id="ticker"></div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="comparison">
+<h3>For Perspective — What $700B Buys</h3>
+<div id="comparisons"></div>
+</div>
+
+<div class="context">
+<div class="context-card">
+<h3>🎯 Why This Matters</h3>
+<p>In February 2026, Alphabet announced $175–185B in AI capex — exceeding its entire 2025 cash generation of $164.7B. Amazon followed with $200B, also surpassing its operating cash flow. Microsoft, Meta, and Apple are all doubling down too. These companies are collectively betting ~$700B that AI returns will materialize within 2 years. If they don't, the financial pressure will be historic. This is the largest infrastructure bet in technology history — bigger than the dotcom boom, bigger than the cloud buildout, bigger than mobile.</p>
+</div>
+</div>
+
+<footer>Built by ZEKE • Feb 21, 2026 • Data from Reuters, CNBC, company earnings</footer>
+
+<script>
+const companies = [
+  { id:'google', name:'Alphabet / Google', capex:180, cashFlow:164.7, yoy:'+100%', employees:'182K', color:'#4285f4', revenue:350 },
+  { id:'amazon', name:'Amazon', capex:200, cashFlow:140, yoy:'+56%', employees:'1.5M', color:'#ff9900', revenue:638 },
+  { id:'microsoft', name:'Microsoft', capex:80, cashFlow:118, yoy:'+40%', employees:'228K', color:'#00a4ef', revenue:245 },
+  { id:'meta', name:'Meta', capex:65, cashFlow:72, yoy:'+72%', employees:'72K', color:'#0668e1', revenue:164 },
+  { id:'apple', name:'Apple', capex:40, cashFlow:110, yoy:'+300%', employees:'164K', color:'#a2aaad', revenue:391 }
+];
+
+const total = companies.reduce((s,c)=>s+c.capex,0);
+const maxCapex = Math.max(...companies.map(c=>c.capex));
+
+// Counter animation
+function animateCounter(el, target, prefix='$', suffix='B') {
+  let start = 0;
+  const dur = 2000, step = 16;
+  const inc = target / (dur / step);
+  const timer = setInterval(() => {
+    start += inc;
+    if (start >= target) { start = target; clearInterval(timer); }
+    el.textContent = prefix + Math.round(start) + suffix;
+  }, step);
+}
+
+// Build cards
+const grid = document.getElementById('grid');
+companies.forEach(c => {
+  const pct = (c.capex / c.cashFlow * 100).toFixed(0);
+  const overBudget = c.capex > c.cashFlow;
+  const card = document.createElement('div');
+  card.className = 'company-card';
+  card.dataset.co = c.id;
+  card.innerHTML = `
+    <div class="co-header">
+      <div class="co-name">${c.name}</div>
+      <div class="co-capex" style="color:${c.color}">$${c.capex}B</div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" data-w="${Math.min(pct,100)}" style="background:${c.color}">${pct}%</div>
+    </div>
+    <div class="bar-label">
+      <span>CapEx vs Cash Flow</span>
+      <span style="color:${overBudget?'#ff3366':'#00ff88'}">${overBudget?'⚠️ Over budget':'✅ Within budget'}</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><span>YoY Change</span><b>${c.yoy}</b></div>
+      <div class="stat"><span>Cash Flow</span><b>$${c.cashFlow}B</b></div>
+      <div class="stat"><span>Revenue</span><b>$${c.revenue}B</b></div>
+    </div>
+  `;
+  grid.appendChild(card);
+});
+
+// Comparisons
+const comparisons = [
+  { label: 'NASA (yearly)', val: 27, color: '#00d4ff' },
+  { label: 'US Military R&D', val: 140, color: '#ff6b35' },
+  { label: 'Global EV Market', val: 500, color: '#00ff88' },
+  { label: 'AI CapEx 2026', val: total, color: '#a855f7' },
+  { label: 'Apollo Program*', val: 288, color: '#ff3366' },
+];
+const compMax = Math.max(...comparisons.map(c=>c.val));
+const compEl = document.getElementById('comparisons');
+comparisons.forEach(c => {
+  const row = document.createElement('div');
+  row.className = 'comp-row';
+  row.innerHTML = `
+    <div class="comp-label">${c.label}</div>
+    <div class="comp-bar-wrap"><div class="comp-bar" data-w="${c.val/compMax*100}" style="background:${c.color}"></div></div>
+    <div class="comp-val" style="color:${c.color}">$${c.val}B</div>
+  `;
+  compEl.appendChild(row);
+});
+
+// Ticker
+const facts = [
+  '<b>$700B+</b> combined AI CapEx for 2026',
+  'Amazon: <b>$200B</b> — largest single-company tech spend ever',
+  'Alphabet spending <b>more than it earns</b> on AI infra',
+  '<b>3 of 5</b> companies spending beyond cash flow',
+  'AI CapEx > <b>GDP of 150+ countries</b>',
+  'Equivalent to <b>26 NASA budgets</b>',
+  '<b>2.4x</b> the Apollo Program (inflation-adjusted)',
+  'Could buy <b>7 million homes</b> at US median price',
+];
+const tickerEl = document.getElementById('ticker');
+tickerEl.innerHTML = [...facts,...facts].map(f=>`<span class="ticker-item">${f}</span>`).join('');
+
+// Animate on load
+setTimeout(() => {
+  animateCounter(document.getElementById('totalCounter'), total);
+  document.querySelectorAll('.bar-fill').forEach(el => el.style.width = el.dataset.w + '%');
+  document.querySelectorAll('.comp-bar').forEach(el => el.style.width = el.dataset.w + '%');
+}, 300);
+</script>
+</body>
+</html>
