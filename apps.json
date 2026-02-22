@@ -18,5 +18,6 @@
   {"date": "2026-02-18", "name": "AI Persona Forge", "trend": "AI 'goth schoolgirl' Amelia goes from classroom tool to global meme to meme coin — sparking the AI persona creator trend", "tag": "Character/Creative", "path": "2026-02-18/index.html"},
   {"date": "2026-02-19", "name": "NeuroScan AI", "trend": "University of Michigan AI reads brain MRIs in seconds — diagnoses 50+ neurological conditions with 97.5% accuracy", "tag": "Medical/Interactive", "path": "2026-02-19/index.html"},
   {"date": "2026-02-20", "name": "StreamVox", "trend": "JioHotstar partners with OpenAI to launch ChatGPT-powered voice assistant for conversational streaming — talk to your TV to find what to watch", "tag": "Voice/Streaming", "path": "2026-02-20/index.html"},
-  {"date": "2026-02-21", "name": "AI Arms Race", "trend": "Big Tech collectively bets $700B+ on AI infrastructure in 2026 — Alphabet ($180B) and Amazon ($200B) both spending beyond their cash flow", "tag": "Finance/Data Viz", "path": "2026-02-21/index.html"}
+  {"date": "2026-02-21", "name": "AI Arms Race", "trend": "Big Tech collectively bets $700B+ on AI infrastructure in 2026 — Alphabet ($180B) and Amazon ($200B) both spending beyond their cash flow", "tag": "Finance/Data Viz", "path": "2026-02-21/index.html"},
+  {"date": "2026-02-22", "name": "DiagramForge", "trend": "Google's PaperBanana AI auto-generates publication-ready research diagrams — sparking a wave of AI-powered scientific illustration tools", "tag": "Research/Creative", "path": "2026-02-22/index.html"}
 ]

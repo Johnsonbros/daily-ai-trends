@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiagramForge — AI Architecture Diagram Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--surface:#13131f;--surface2:#1a1a2e;--accent:#f59e0b;--accent2:#8b5cf6;--text:#e2e8f0;--dim:#64748b;--border:#2a2a3e;--success:#22c55e;--danger:#ef4444}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.header{text-align:center;padding:24px 16px 16px;background:linear-gradient(180deg,#13131f 0%,transparent 100%)}
+.header h1{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .sub{color:var(--dim);font-size:.8rem;margin-top:4px}
+.badge{display:inline-block;background:var(--accent2);color:#fff;font-size:.6rem;padding:2px 8px;border-radius:99px;margin-top:6px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.container{max-width:900px;margin:0 auto;padding:0 16px 80px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px}
+.panel h2{font-size:.9rem;color:var(--accent);margin-bottom:12px;font-weight:700}
+textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:.85rem;resize:vertical;min-height:80px;font-family:inherit}
+textarea:focus{outline:none;border-color:var(--accent2)}
+.templates{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tmpl{background:var(--surface2);border:1px solid var(--border);color:var(--dim);padding:6px 12px;border-radius:99px;font-size:.72rem;cursor:pointer;transition:.2s}
+.tmpl:hover,.tmpl.active{border-color:var(--accent);color:var(--accent)}
+.btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:12px 24px;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer;width:100%;margin-top:12px;transition:.2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(245,158,11,.3)}
+.btn:disabled{opacity:.5;transform:none}
+.canvas-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;position:relative}
+.canvas-wrap canvas{width:100%;display:block;background:#0d0d18}
+.toolbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);flex-wrap:wrap;justify-content:center}
+.toolbar button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);padding:6px 14px;border-radius:8px;font-size:.72rem;cursor:pointer;transition:.2s}
+.toolbar button:hover{border-color:var(--accent);color:var(--accent)}
+.style-row{display:flex;gap:8px;margin-top:8px}
+.style-opt{flex:1;background:var(--surface2);border:1px solid var(--border);padding:10px;border-radius:10px;text-align:center;cursor:pointer;transition:.2s}
+.style-opt.active{border-color:var(--accent);background:rgba(245,158,11,.08)}
+.style-opt span{display:block;font-size:1.2rem}
+.style-opt small{font-size:.65rem;color:var(--dim)}
+.loading{text-align:center;padding:40px;color:var(--dim)}
+.loading .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.examples{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.ex-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;transition:.2s;font-size:.75rem;color:var(--dim)}
+.ex-card:hover{border-color:var(--accent2);color:var(--text)}
+.ex-card strong{color:var(--text);display:block;margin-bottom:4px;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>🍌 DiagramForge</h1>
+<p class="sub">Inspired by Google's PaperBanana — AI architecture diagrams from text</p>
+<div class="badge">Trending: AI Research Diagrams</div>
+</div>
+<div class="container">
+<div class="panel">
+<h2>📝 Describe Your Architecture</h2>
+<div class="templates">
+<div class="tmpl active" data-t="arch">Architecture</div>
+<div class="tmpl" data-t="flow">Data Flow</div>
+<div class="tmpl" data-t="pipeline">ML Pipeline</div>
+<div class="tmpl" data-t="network">Network</div>
+</div>
+<textarea id="desc" placeholder="e.g. An encoder-decoder transformer with attention layers, feeding into a classification head..."></textarea>
+<div class="style-row">
+<div class="style-opt active" data-s="neon"><span>🌙</span><small>Neon</small></div>
+<div class="style-opt" data-s="paper"><span>📄</span><small>Paper</small></div>
+<div class="style-opt" data-s="blueprint"><span>🔷</span><small>Blueprint</small></div>
+</div>
+<button class="btn" id="genBtn" onclick="generate()">⚡ Generate Diagram</button>
+</div>
+
+<div class="panel" id="exPanel">
+<h2>💡 Quick Examples</h2>
+<div class="examples">
+<div class="ex-card" onclick="loadEx(0)"><strong>Transformer</strong>Encoder → Multi-Head Attention → FFN → Decoder with cross-attention</div>
+<div class="ex-card" onclick="loadEx(1)"><strong>CNN Classifier</strong>Conv layers → Pooling → Flatten → Dense → Softmax output</div>
+<div class="ex-card" onclick="loadEx(2)"><strong>RAG Pipeline</strong>Query → Retriever → Vector DB → Context + LLM → Response</div>
+<div class="ex-card" onclick="loadEx(3)"><strong>Microservices</strong>API Gateway → Auth, Users, Orders, Payments services → Message Queue → DB</div>
+</div>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap" style="display:none">
+<canvas id="diagram" width="800" height="600"></canvas>
+<div class="toolbar">
+<button onclick="download()">💾 Save PNG</button>
+<button onclick="regen()">🔄 Regenerate</button>
+<button onclick="zoomIn()">🔍+</button>
+<button onclick="zoomOut()">🔍−</button>
+</div>
+</div>
+</div>
+
+<script>
+const examples=[
+  "Transformer architecture:\nInput Embeddings → Positional Encoding → [Encoder Block x6: Multi-Head Self-Attention → Add & Norm → Feed Forward → Add & Norm] → [Decoder Block x6: Masked Multi-Head Attention → Add & Norm → Cross-Attention → Add & Norm → Feed Forward → Add & Norm] → Linear → Softmax → Output",
+  "CNN Image Classifier:\nInput Image (224x224) → Conv2D(64,3x3) → ReLU → MaxPool → Conv2D(128,3x3) → ReLU → MaxPool → Conv2D(256,3x3) → ReLU → GlobalAvgPool → Dense(512) → Dropout(0.5) → Dense(10) → Softmax → Prediction",
+  "RAG Pipeline:\nUser Query → Query Encoder → Vector Search → [Vector Database: Pinecone/Weaviate] → Top-K Documents → Context Assembly → [LLM: GPT-4/Claude] → Response Generation → Answer with Citations",
+  "Microservices Architecture:\nClient → API Gateway → [Auth Service → JWT] | [User Service → PostgreSQL] | [Order Service → MongoDB] | [Payment Service → Stripe API] → Message Queue (RabbitMQ) → Notification Service → Email/Push"
+];
+const colors={
+  neon:{bg:'#0d0d18',node:'#1a1a2e',border:'#8b5cf6',text:'#e2e8f0',accent:'#f59e0b',link:'#6366f1',glow:'rgba(139,92,246,.3)'},
+  paper:{bg:'#fafaf9',node:'#ffffff',border:'#d4d4d8',text:'#1c1917',accent:'#dc2626',link:'#71717a',glow:'rgba(0,0,0,.08)'},
+  blueprint:{bg:'#0c1929',node:'#132f4c',border:'#1e88e5',text:'#bbdefb',accent:'#4fc3f7',link:'#1565c0',glow:'rgba(30,136,229,.3)'}
+};
+let style='neon',scale=1,nodes=[],edges=[];
+const canvas=document.getElementById('diagram'),ctx=canvas.getContext('2d');
+
+document.querySelectorAll('.tmpl').forEach(t=>t.onclick=function(){
+  document.querySelectorAll('.tmpl').forEach(x=>x.classList.remove('active'));
+  this.classList.add('active');
+});
+document.querySelectorAll('.style-opt').forEach(s=>s.onclick=function(){
+  document.querySelectorAll('.style-opt').forEach(x=>x.classList.remove('active'));
+  this.classList.add('active');style=this.dataset.s;if(nodes.length)render();
+});
+function loadEx(i){document.getElementById('desc').value=examples[i]}
+
+function parse(text){
+  const parts=text.replace(/\n/g,' → ').split(/→|➜|->|>>/).map(s=>s.trim()).filter(Boolean);
+  nodes=[];edges=[];
+  const cols=Math.min(4,Math.ceil(Math.sqrt(parts.length)));
+  const nw=160,nh=56,gx=40,gy=50;
+  const totalW=cols*nw+(cols-1)*gx;
+  const startX=(canvas.width-totalW)/2;
+  parts.forEach((p,i)=>{
+    let label=p.replace(/[\[\]]/g,'').trim();
+    let type='process';
+    if(/input|query|client|user|image/i.test(label))type='input';
+    else if(/output|result|prediction|answer|response|softmax$/i.test(label))type='output';
+    else if(/database|db|store|pinecone|weaviate|postgres|mongo/i.test(label))type='data';
+    else if(/x\d|block/i.test(label))type='group';
+    const col=i%cols,row=Math.floor(i/cols);
+    nodes.push({id:i,label,type,x:startX+col*(nw+gx),y:80+row*(nh+gy),w:nw,h:nh});
+    if(i>0)edges.push({from:i-1,to:i});
+  });
+  canvas.height=Math.max(400,nodes[nodes.length-1].y+140);
+}
+
+function render(){
+  const c=colors[style];
+  const dpr=window.devicePixelRatio||1;
+  canvas.style.width=canvas.width+'px';
+  canvas.style.height=canvas.height+'px';
+  const W=canvas.width,H=canvas.height;
+  ctx.save();ctx.scale(scale,scale);
+  ctx.fillStyle=c.bg;ctx.fillRect(0,0,W/scale,H/scale);
+  // grid
+  ctx.strokeStyle=style==='neon'?'rgba(255,255,255,.03)':style==='blueprint'?'rgba(255,255,255,.05)':'rgba(0,0,0,.04)';
+  ctx.lineWidth=1;
+  for(let x=0;x<W/scale;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H/scale);ctx.stroke()}
+  for(let y=0;y<H/scale;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W/scale,y);ctx.stroke()}
+  // edges
+  edges.forEach(e=>{
+    const a=nodes[e.from],b=nodes[e.to];
+    const ax=a.x+a.w/2,ay=a.y+a.h/2,bx=b.x+b.w/2,by=b.y+b.h/2;
+    ctx.beginPath();ctx.strokeStyle=c.link;ctx.lineWidth=2;
+    if(Math.abs(ay-by)<10){ctx.moveTo(a.x+a.w,ay);ctx.lineTo(b.x,by)}
+    else{const mx=(ax+bx)/2,my=(ay+by)/2;ctx.moveTo(ax,a.y+a.h);ctx.quadraticCurveTo(ax,my,mx,my);ctx.quadraticCurveTo(bx,my,bx,b.y)}
+    ctx.stroke();
+    // arrow
+    const angle=Math.atan2(by-ay,bx-ax);
+    const tx=bx-Math.cos(angle)*30,ty=by-Math.sin(angle)*28;
+    ctx.beginPath();ctx.moveTo(tx,ty);
+    ctx.lineTo(tx-10*Math.cos(angle-0.4),ty-10*Math.sin(angle-0.4));
+    ctx.lineTo(tx-10*Math.cos(angle+0.4),ty-10*Math.sin(angle+0.4));
+    ctx.closePath();ctx.fillStyle=c.link;ctx.fill();
+  });
+  // nodes
+  nodes.forEach(n=>{
+    ctx.save();
+    ctx.shadowColor=c.glow;ctx.shadowBlur=12;
+    const grad=ctx.createLinearGradient(n.x,n.y,n.x,n.y+n.h);
+    grad.addColorStop(0,c.node);grad.addColorStop(1,style==='neon'?'#12122a':c.node);
+    if(n.type==='data'){roundRect(n.x,n.y,n.w,n.h,22,grad,c.accent)}
+    else if(n.type==='input'||n.type==='output'){roundRect(n.x,n.y,n.w,n.h,6,grad,n.type==='input'?'#22c55e':c.accent)}
+    else if(n.type==='group'){ctx.setLineDash([5,3]);roundRect(n.x,n.y,n.w,n.h,10,grad,c.border);ctx.setLineDash([])}
+    else{roundRect(n.x,n.y,n.w,n.h,10,grad,c.border)}
+    ctx.shadowBlur=0;
+    ctx.fillStyle=c.text;ctx.font='bold 11px Inter,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    const maxW=n.w-16,lbl=n.label;
+    if(ctx.measureText(lbl).width>maxW){
+      const words=lbl.split(/\s+/);let lines=[],cur='';
+      words.forEach(w=>{const test=cur?cur+' '+w:w;if(ctx.measureText(test).width>maxW){lines.push(cur);cur=w}else cur=test});
+      if(cur)lines.push(cur);
+      lines=lines.slice(0,2);
+      lines.forEach((l,i)=>ctx.fillText(l,n.x+n.w/2,n.y+n.h/2+(i-(lines.length-1)/2)*14));
+    }else ctx.fillText(lbl,n.x+n.w/2,n.y+n.h/2);
+    // type icon
+    const icons={input:'▶',output:'◆',data:'⬡',group:'⊞',process:'●'};
+    ctx.font='8px sans-serif';ctx.fillStyle=c.accent;ctx.textAlign='left';
+    ctx.fillText(icons[n.type]||'',n.x+6,n.y+12);
+    ctx.restore();
+  });
+  // title
+  ctx.fillStyle=c.accent;ctx.font='bold 14px Inter,system-ui,sans-serif';ctx.textAlign='center';
+  ctx.fillText('Generated by DiagramForge',canvas.width/(2*scale),canvas.height/scale-16);
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r,fill,stroke){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill()}ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();
+}
+function generate(){
+  const text=document.getElementById('desc').value.trim();
+  if(!text)return;
+  document.getElementById('canvasWrap').style.display='block';
+  document.getElementById('exPanel').style.display='none';
+  scale=1;parse(text);render();
+  document.getElementById('canvasWrap').scrollIntoView({behavior:'smooth'});
+}
+function regen(){const n=nodes.map(n=>({...n,x:n.x+(Math.random()*20-10),y:n.y+(Math.random()*10-5)}));nodes=n;render()}
+function zoomIn(){scale=Math.min(2,scale+.15);render()}
+function zoomOut(){scale=Math.max(.5,scale-.15);render()}
+function download(){
+  const a=document.createElement('a');a.download='diagram.png';a.href=canvas.toDataURL('image/png');a.click();
+}
+</script>
+</body>
+</html>
