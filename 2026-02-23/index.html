@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Palette — Visual AI Image Prompt Builder</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#14141f;--accent:#7c3aed;--accent2:#a855f7;--text:#e2e8f0;--muted:#64748b;--glow:rgba(124,58,237,.3);--border:#1e1e2e}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.header{text-align:center;padding:24px 16px 8px;position:relative}
+.header h1{font-size:1.6rem;background:linear-gradient(135deg,#7c3aed,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+.header p{color:var(--muted);font-size:.8rem;margin-top:4px}
+.categories{padding:8px 16px;display:flex;flex-direction:column;gap:16px;max-width:600px;margin:0 auto}
+.cat-label{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent2);font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.cat-label .icon{font-size:1rem}
+.tiles{display:flex;flex-wrap:wrap;gap:8px}
+.tile{padding:8px 14px;border-radius:20px;background:var(--card);border:1.5px solid var(--border);cursor:pointer;font-size:.82rem;transition:all .2s;user-select:none;position:relative;overflow:hidden}
+.tile:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tile.selected{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(168,85,247,.15));border-color:var(--accent2);box-shadow:0 0 12px var(--glow)}
+.tile.selected::before{content:'✓ ';font-size:.7rem}
+.tile .emoji{margin-right:4px}
+.output-section{max-width:600px;margin:20px auto;padding:0 16px}
+.prompt-box{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px;min-height:80px;position:relative;transition:border-color .3s}
+.prompt-box.has-content{border-color:var(--accent)}
+.prompt-label{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.prompt-text{font-size:.9rem;line-height:1.6;color:var(--text);word-break:break-word;min-height:40px}
+.prompt-text.empty{color:var(--muted);font-style:italic;font-size:.85rem}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{padding:10px 20px;border-radius:12px;border:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;flex:1}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 15px var(--glow)}
+.btn-secondary{background:var(--card);color:var(--text);border:1.5px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent)}
+.btn-shuffle{background:var(--card);color:var(--accent2);border:1.5px solid var(--accent);min-width:44px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--accent);color:#fff;padding:10px 24px;border-radius:12px;font-size:.85rem;font-weight:600;transition:transform .3s;z-index:99;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.history-section{max-width:600px;margin:20px auto;padding:0 16px 40px}
+.history-label{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.history-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;font-size:.8rem;line-height:1.5;color:var(--muted);cursor:pointer;transition:all .2s}
+.history-item:hover{border-color:var(--accent);color:var(--text)}
+.neg-section{margin-top:8px}
+.neg-toggle{font-size:.75rem;color:var(--accent2);cursor:pointer;text-decoration:underline;margin-bottom:6px;display:inline-block}
+.style-preview{width:100%;height:120px;border-radius:12px;margin-top:12px;background:linear-gradient(135deg,#0a0a0f,#1a1a2e);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.style-preview canvas{width:100%;height:100%}
+.counter{position:fixed;top:12px;right:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:.7rem;color:var(--accent2);z-index:10}
+</style>
+</head>
+<body>
+
+<div class="counter" id="counter">0 selected</div>
+
+<div class="header">
+<h1>🎨 Prompt Palette</h1>
+<p>Tap tiles to compose the perfect AI image prompt — no typing required</p>
+</div>
+
+<div class="categories" id="categories"></div>
+
+<div class="output-section">
+<div class="prompt-box" id="promptBox">
+<div class="prompt-label">Generated Prompt</div>
+<div class="prompt-text empty" id="promptText">Tap tiles above to start building...</div>
+</div>
+<div class="neg-section">
+<span class="neg-toggle" id="negToggle">+ Negative prompt</span>
+<div class="prompt-box" id="negBox" style="display:none;margin-top:8px">
+<div class="prompt-label">Negative Prompt</div>
+<div class="prompt-text" id="negText" style="font-size:.8rem"></div>
+</div>
+</div>
+<div class="actions">
+<button class="btn btn-shuffle" onclick="shuffleRandom()" title="Random">🎲</button>
+<button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+<button class="btn btn-primary" onclick="copyPrompt()">📋 Copy Prompt</button>
+</div>
+<div class="style-preview"><canvas id="vizCanvas"></canvas></div>
+</div>
+
+<div class="history-section" id="historySection" style="display:none">
+<div class="history-label">📜 Recent Prompts</div>
+<div id="historyList"></div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+const DATA = [
+  { name: "Subject", icon: "🎯", multi: false, tiles: [
+    {l:"👩 Portrait",v:"portrait of a person"},{l:"🏙️ Cityscape",v:"cityscape"},{l:"🌲 Landscape",v:"sweeping landscape"},{l:"🐉 Creature",v:"mythical creature"},{l:"🚀 Sci-fi Scene",v:"science fiction scene"},{l:"🏰 Fantasy",v:"fantasy scene"},{l:"🍕 Food",v:"gourmet food photography"},{l:"🐱 Animal",v:"animal portrait"},{l:"🎸 Music",v:"musician performing"},{l:"🏛️ Architecture",v:"architectural photography"},{l:"💎 Abstract",v:"abstract composition"},{l:"🌊 Ocean",v:"ocean scene"}
+  ]},
+  { name: "Style", icon: "🖌️", multi: true, max:2, tiles: [
+    {l:"📸 Photo",v:"photorealistic, 8k photograph"},{l:"🎨 Oil Paint",v:"oil painting style"},{l:"✏️ Pencil",v:"detailed pencil sketch"},{l:"🟪 Cyberpunk",v:"cyberpunk aesthetic, neon"},{l:"🌸 Anime",v:"anime style, cel shaded"},{l:"🖼️ Baroque",v:"baroque painting"},{l:"🔲 Pixel Art",v:"pixel art, retro game"},{l:"💧 Watercolor",v:"delicate watercolor"},{l:"🎞️ Film Noir",v:"film noir, black and white"},{l:"🪩 Vaporwave",v:"vaporwave, pastel colors, retro"}
+  ]},
+  { name: "Mood", icon: "✨", multi: true, max:2, tiles: [
+    {l:"😌 Serene",v:"serene, peaceful"},{l:"⚡ Dramatic",v:"dramatic, intense"},{l:"🌈 Whimsical",v:"whimsical, playful"},{l:"😱 Horror",v:"dark, horror, unsettling"},{l:"🥰 Romantic",v:"romantic, soft"},{l:"🔥 Epic",v:"epic, grandiose"},{l:"🤖 Futuristic",v:"futuristic, advanced"},{l:"🍂 Nostalgic",v:"nostalgic, warm vintage"}
+  ]},
+  { name: "Lighting", icon: "💡", multi: false, tiles: [
+    {l:"🌅 Golden Hour",v:"golden hour lighting"},{l:"🌙 Moonlit",v:"moonlit, cool blue tones"},{l:"💜 Neon Glow",v:"neon glow lighting"},{l:"☀️ Harsh Sun",v:"harsh midday sunlight"},{l:"🕯️ Candlelit",v:"candlelight, warm flickering"},{l:"⚡ Lightning",v:"lightning storm illumination"},{l:"🌫️ Foggy",v:"soft fog, diffused light"},{l:"🔦 Spotlight",v:"dramatic spotlight from above"}
+  ]},
+  { name: "Camera", icon: "📷", multi: false, tiles: [
+    {l:"🔍 Macro",v:"macro lens, extreme close-up"},{l:"🌐 Wide Angle",v:"ultra wide angle lens"},{l:"📐 Top Down",v:"birds eye view, top down"},{l:"🎞️ 35mm",v:"shot on 35mm film, grain"},{l:"📏 Tilt-Shift",v:"tilt-shift miniature effect"},{l:"🔭 Telephoto",v:"telephoto compression"},{l:"👁️ Fish-eye",v:"fish-eye lens distortion"},{l:"⬆️ Low Angle",v:"low angle heroic shot"}
+  ]},
+  { name: "Detail Boost", icon: "🔧", multi: true, max:3, tiles: [
+    {l:"✨ HDR",v:"HDR, high dynamic range"},{l:"🎯 Sharp",v:"extremely detailed, sharp focus"},{l:"🏆 Award",v:"award-winning photography"},{l:"🖥️ 8K",v:"8K UHD resolution"},{l:"📰 Editorial",v:"editorial style, magazine quality"},{l:"🌀 Depth",v:"shallow depth of field, bokeh"},{l:"💎 Ornate",v:"intricate, ornate details"},{l:"🎬 Cinematic",v:"cinematic composition, anamorphic"}
+  ]}
+];
+
+const NEG_DEFAULTS = "blurry, low quality, distorted, deformed, watermark, text, signature, cropped, worst quality";
+let selected = {};
+let history = JSON.parse(localStorage.getItem('pp_history')||'[]');
+
+function init() {
+  const cont = document.getElementById('categories');
+  DATA.forEach((cat, ci) => {
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="cat-label"><span class="icon">${cat.icon}</span>${cat.name}${cat.multi?' <span style="opacity:.5;font-size:.6rem">(pick ${cat.max||'any'})</span>':''}</div><div class="tiles" id="cat-${ci}"></div>`;
+    cont.appendChild(div);
+    const tilesDiv = div.querySelector('.tiles');
+    cat.tiles.forEach((t, ti) => {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.textContent = t.l;
+      tile.dataset.ci = ci;
+      tile.dataset.ti = ti;
+      tile.onclick = () => toggleTile(ci, ti, tile);
+      tilesDiv.appendChild(tile);
+    });
+  });
+  document.getElementById('negToggle').onclick = () => {
+    const box = document.getElementById('negBox');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('negText').textContent = NEG_DEFAULTS;
+  };
+  renderHistory();
+  initViz();
+}
+
+function toggleTile(ci, ti, el) {
+  if (!selected[ci]) selected[ci] = new Set();
+  const cat = DATA[ci];
+  if (selected[ci].has(ti)) {
+    selected[ci].delete(ti);
+    el.classList.remove('selected');
+  } else {
+    if (!cat.multi) {
+      selected[ci].forEach(oldTi => {
+        document.querySelector(`[data-ci="${ci}"][data-ti="${oldTi}"]`)?.classList.remove('selected');
+      });
+      selected[ci].clear();
+    } else if (cat.max && selected[ci].size >= cat.max) {
+      const first = selected[ci].values().next().value;
+      selected[ci].delete(first);
+      document.querySelector(`[data-ci="${ci}"][data-ti="${first}"]`)?.classList.remove('selected');
+    }
+    selected[ci].add(ti);
+    el.classList.add('selected');
+  }
+  updatePrompt();
+}
+
+function buildPrompt() {
+  const parts = [];
+  DATA.forEach((cat, ci) => {
+    if (selected[ci]) {
+      selected[ci].forEach(ti => parts.push(cat.tiles[ti].v));
+    }
+  });
+  return parts.join(', ');
+}
+
+function updatePrompt() {
+  const p = buildPrompt();
+  const el = document.getElementById('promptText');
+  const box = document.getElementById('promptBox');
+  const count = Object.values(selected).reduce((a, s) => a + s.size, 0);
+  document.getElementById('counter').textContent = `${count} selected`;
+  if (p) {
+    el.textContent = p;
+    el.classList.remove('empty');
+    box.classList.add('has-content');
+  } else {
+    el.textContent = 'Tap tiles above to start building...';
+    el.classList.add('empty');
+    box.classList.remove('has-content');
+  }
+  updateViz();
+}
+
+function copyPrompt() {
+  const p = buildPrompt();
+  if (!p) return;
+  navigator.clipboard.writeText(p).then(() => {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1500);
+  });
+  if (!history.includes(p)) {
+    history.unshift(p);
+    if (history.length > 10) history.pop();
+    localStorage.setItem('pp_history', JSON.stringify(history));
+    renderHistory();
+  }
+}
+
+function clearAll() {
+  document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
+  selected = {};
+  updatePrompt();
+}
+
+function shuffleRandom() {
+  clearAll();
+  DATA.forEach((cat, ci) => {
+    if (Math.random() > 0.25) {
+      const count = cat.multi ? Math.ceil(Math.random() * (cat.max || 1)) : 1;
+      const indices = [...Array(cat.tiles.length).keys()].sort(() => Math.random() - 0.5).slice(0, count);
+      indices.forEach(ti => {
+        const el = document.querySelector(`[data-ci="${ci}"][data-ti="${ti}"]`);
+        if (el) toggleTile(ci, ti, el);
+      });
+    }
+  });
+}
+
+function renderHistory() {
+  const sec = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  if (history.length === 0) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  list.innerHTML = history.map(h => `<div class="history-item" onclick="copyText('${h.replace(/'/g, "\\'")}')">${h}</div>`).join('');
+}
+
+function copyText(t) {
+  navigator.clipboard.writeText(t);
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// Abstract visualization
+let vizCtx, vizW, vizH;
+const particles = [];
+function initViz() {
+  const c = document.getElementById('vizCanvas');
+  vizCtx = c.getContext('2d');
+  const r = c.parentElement.getBoundingClientRect();
+  c.width = vizW = r.width * 2;
+  c.height = vizH = r.height * 2;
+  for (let i = 0; i < 60; i++) particles.push({x:Math.random()*vizW,y:Math.random()*vizH,r:Math.random()*3+1,vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5,hue:270});
+  animViz();
+}
+function updateViz() {
+  const count = Object.values(selected).reduce((a, s) => a + s.size, 0);
+  const hue = (270 + count * 25) % 360;
+  particles.forEach(p => { p.hue = hue + (Math.random() - .5) * 40; p.r = Math.random() * (2 + count * .5) + 1; });
+}
+function animViz() {
+  vizCtx.fillStyle = 'rgba(10,10,15,0.15)';
+  vizCtx.fillRect(0, 0, vizW, vizH);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > vizW) p.vx *= -1;
+    if (p.y < 0 || p.y > vizH) p.vy *= -1;
+    vizCtx.beginPath();
+    vizCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    vizCtx.fillStyle = `hsla(${p.hue},70%,60%,0.8)`;
+    vizCtx.fill();
+  });
+  // connections
+  const count = Object.values(selected).reduce((a, s) => a + s.size, 0);
+  if (count > 0) {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 60 + count * 10) {
+          vizCtx.beginPath();
+          vizCtx.moveTo(particles[i].x, particles[i].y);
+          vizCtx.lineTo(particles[j].x, particles[j].y);
+          vizCtx.strokeStyle = `hsla(${particles[i].hue},60%,50%,${.15 * (1 - dist / (60 + count * 10))})`;
+          vizCtx.stroke();
+        }
+      }
+    }
+  }
+  requestAnimationFrame(animViz);
+}
+
+init();
+</script>
+</body>
+</html>
