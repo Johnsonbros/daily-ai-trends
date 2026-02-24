@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Earth Scanner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'SF Pro','Segoe UI',system-ui,sans-serif;background:#0a0e1a;color:#e0e6f0;min-height:100vh;overflow-x:hidden}
+.header{padding:16px 20px;background:linear-gradient(135deg,#0d1425,#162040);border-bottom:1px solid #1a2744;display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.2rem;font-weight:700;background:linear-gradient(90deg,#4fc3f7,#81c784);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .tag{font-size:.65rem;background:#1b3a2e;color:#81c784;padding:2px 8px;border-radius:10px}
+.globe-container{position:relative;width:100%;height:340px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,#0d1a30,#0a0e1a)}
+canvas#globe{cursor:grab}
+.scan-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.scan-ring{width:280px;height:280px;border:2px solid rgba(79,195,247,.3);border-radius:50%;animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.08);opacity:.7}}
+.controls{padding:16px 20px;display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 16px;border:1px solid #1a2744;background:#111827;color:#e0e6f0;border-radius:8px;font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn:hover,.btn.active{background:#1b3a5e;border-color:#4fc3f7;color:#4fc3f7}
+.results{padding:0 20px 20px}
+.card{background:#111827;border:1px solid #1a2744;border-radius:12px;padding:16px;margin-bottom:12px;animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card h3{font-size:.9rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.card p{font-size:.78rem;color:#8892a8;line-height:1.5}
+.stat-row{display:flex;gap:12px;margin-top:10px}
+.stat{flex:1;background:#0d1425;border-radius:8px;padding:10px;text-align:center}
+.stat .val{font-size:1.3rem;font-weight:700;color:#4fc3f7}
+.stat .label{font-size:.65rem;color:#6b7688;margin-top:2px}
+.bar{height:6px;background:#1a2744;border-radius:3px;margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 1.5s ease}
+.severity-low{background:linear-gradient(90deg,#81c784,#66bb6a)}
+.severity-med{background:linear-gradient(90deg,#ffb74d,#ffa726)}
+.severity-high{background:linear-gradient(90deg,#ef5350,#e53935)}
+.severity-crit{background:linear-gradient(90deg,#ce93d8,#ab47bc)}
+.scanning-indicator{text-align:center;padding:20px;color:#4fc3f7;font-size:.85rem}
+.scanning-indicator .dots::after{content:'';animation:dots 1.5s steps(4,end) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+.footer{text-align:center;padding:20px;font-size:.65rem;color:#3a4560}
+.coords{position:absolute;bottom:12px;left:20px;font-size:.7rem;color:#4fc3f7;font-family:monospace;background:rgba(10,14,26,.8);padding:4px 8px;border-radius:4px}
+.detection-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:.65rem;font-weight:600}
+.det-deforest{background:#2e1a1a;color:#ef5350}
+.det-urban{background:#1a2744;color:#4fc3f7}
+.det-water{background:#1a2e2e;color:#4dd0e1}
+.det-fire{background:#2e1a0a;color:#ffb74d}
+.det-ice{background:#1a1a2e;color:#ce93d8}
+.det-crop{background:#1a2e1a;color:#81c784}
+</style>
+</head>
+<body>
+<div class="header">
+<span style="font-size:1.5rem">🛰️</span>
+<h1>AI Earth Scanner</h1>
+<span class="tag">LIVE SIM</span>
+</div>
+
+<div class="globe-container">
+<canvas id="globe" width="300" height="300"></canvas>
+<div class="scan-overlay"><div class="scan-ring"></div></div>
+<div class="coords" id="coords">LAT 0.00° LON 0.00°</div>
+</div>
+
+<div class="controls">
+<button class="btn active" data-mode="all">🌍 All Detections</button>
+<button class="btn" data-mode="deforest">🌲 Deforestation</button>
+<button class="btn" data-mode="urban">🏙️ Urban Growth</button>
+<button class="btn" data-mode="water">💧 Water Change</button>
+<button class="btn" data-mode="fire">🔥 Wildfire</button>
+<button class="btn" data-mode="ice">🧊 Ice Melt</button>
+<button class="btn" data-mode="crop">🌾 Crop Health</button>
+</div>
+
+<div class="scanning-indicator" id="scanStatus">
+Scanning region<span class="dots"></span>
+</div>
+
+<div class="results" id="results"></div>
+
+<div class="footer">AI Earth Scanner — Simulated satellite analysis powered by deep learning • Inspired by UMN AI + Satellite Research 2026</div>
+
+<script>
+const canvas=document.getElementById('globe'),ctx=canvas.getContext('2d');
+let rotation=0,lat=23.5,lon=-45,dragging=false,lastX=0;
+
+function drawGlobe(){
+ctx.clearRect(0,0,300,300);
+const cx=150,cy=150,r=120;
+// atmosphere
+const atm=ctx.createRadialGradient(cx,cy,r-10,cx,cy,r+30);
+atm.addColorStop(0,'rgba(79,195,247,0.05)');atm.addColorStop(.7,'rgba(79,195,247,0.1)');atm.addColorStop(1,'transparent');
+ctx.fillStyle=atm;ctx.fillRect(0,0,300,300);
+// ocean
+const grd=ctx.createRadialGradient(cx-30,cy-30,0,cx,cy,r);
+grd.addColorStop(0,'#1a3a5e');grd.addColorStop(1,'#0d1a30');
+ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+// land masses (simplified)
+const lands=[
+{x:0,y:-25,w:50,h:55,c:'#1b4332'}, // africa
+{x:-60,y:-15,w:35,h:60,c:'#1b4332'}, // south america
+{x:-70,y:-55,w:50,h:25,c:'#2d5a27'}, // north america
+{x:40,y:-55,w:70,h:35,c:'#1b4332'}, // eurasia
+{x:60,y:15,w:30,h:25,c:'#2d5a27'}, // australia
+];
+lands.forEach(l=>{
+const lx=cx+l.x*Math.cos(rotation)-l.y*0.1;
+const ly=cy+l.y;
+const dist=Math.sqrt((lx-cx)**2+(ly-cy)**2);
+if(dist<r-5){
+ctx.fillStyle=l.c;
+ctx.beginPath();
+ctx.ellipse(lx,ly,l.w*0.5,l.h*0.5,rotation*0.3,0,Math.PI*2);
+ctx.fill();
+}
+});
+// scan line
+const scanY=cy+Math.sin(Date.now()/1000)*r*0.8;
+ctx.strokeStyle='rgba(79,195,247,0.4)';ctx.lineWidth=1;
+ctx.beginPath();
+const scanW=Math.sqrt(Math.max(0,r*r-(scanY-cy)**2));
+ctx.moveTo(cx-scanW,scanY);ctx.lineTo(cx+scanW,scanY);ctx.stroke();
+// grid
+ctx.strokeStyle='rgba(79,195,247,0.08)';ctx.lineWidth=0.5;
+for(let i=-2;i<=2;i++){
+const gy=cy+i*30;
+const gw=Math.sqrt(Math.max(0,r*r-(gy-cy)**2));
+if(gw>0){ctx.beginPath();ctx.moveTo(cx-gw,gy);ctx.lineTo(cx+gw,gy);ctx.stroke();}
+}
+for(let i=-2;i<=2;i++){
+const gx=cx+i*30+rotation*50%30;
+ctx.beginPath();ctx.moveTo(gx,cy-r);ctx.lineTo(gx,cy+r);ctx.stroke();
+}
+// detection dots
+detectionDots.forEach(d=>{
+const dx=cx+d.x*Math.cos(rotation*2)-d.y*0.1;
+const dy=cy+d.y;
+const dist=Math.sqrt((dx-cx)**2+(dy-cy)**2);
+if(dist<r-5){
+ctx.beginPath();ctx.arc(dx,dy,3+Math.sin(Date.now()/500+d.phase)*1.5,0,Math.PI*2);
+ctx.fillStyle=d.color;ctx.fill();
+ctx.beginPath();ctx.arc(dx,dy,8+Math.sin(Date.now()/500+d.phase)*3,0,Math.PI*2);
+ctx.strokeStyle=d.color.replace('1)','0.3)');ctx.lineWidth=1;ctx.stroke();
+}
+});
+// border
+ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(79,195,247,0.2)';ctx.lineWidth=1.5;ctx.stroke();
+rotation+=0.002;
+requestAnimationFrame(drawGlobe);
+}
+
+const detectionDots=[];
+const colors={deforest:'rgba(239,83,80,1)',urban:'rgba(79,195,247,1)',water:'rgba(77,208,225,1)',fire:'rgba(255,183,77,1)',ice:'rgba(206,147,216,1)',crop:'rgba(129,199,132,1)'};
+for(let i=0;i<15;i++){
+const types=Object.keys(colors);
+const t=types[Math.floor(Math.random()*types.length)];
+detectionDots.push({x:(Math.random()-0.5)*200,y:(Math.random()-0.5)*200,color:colors[t],type:t,phase:Math.random()*Math.PI*2});
+}
+
+canvas.addEventListener('mousedown',e=>{dragging=true;lastX=e.clientX});
+canvas.addEventListener('touchstart',e=>{dragging=true;lastX=e.touches[0].clientX});
+window.addEventListener('mouseup',()=>dragging=false);
+window.addEventListener('touchend',()=>dragging=false);
+canvas.addEventListener('mousemove',e=>{if(dragging){rotation+=(e.clientX-lastX)*0.005;lastX=e.clientX}});
+canvas.addEventListener('touchmove',e=>{if(dragging){rotation+=(e.touches[0].clientX-lastX)*0.005;lastX=e.touches[0].clientX}});
+
+drawGlobe();
+
+// Update coords
+setInterval(()=>{
+lat=23.5+Math.sin(Date.now()/5000)*40;
+lon=-45+rotation*100%360;
+document.getElementById('coords').textContent=`LAT ${lat.toFixed(2)}° LON ${(lon%180).toFixed(2)}°`;
+},200);
+
+// Detection data
+const regions=['Amazon Basin, Brazil','Sahel Region, Chad','Mekong Delta, Vietnam','Borneo, Indonesia','Great Barrier Reef, Australia','Arctic Shelf, Svalbard','Central Valley, California','Congo Basin, DRC','Ganges Delta, Bangladesh','Siberian Taiga, Russia','Lake Chad Basin','Aral Sea, Kazakhstan','Madagascar East Coast','Greenland Ice Sheet','Punjab Region, India'];
+const detTypes={
+deforest:{emoji:'🌲',label:'Deforestation',badge:'det-deforest',msgs:['Tree cover loss detected: {pct}% reduction over 90 days','Canopy fragmentation accelerating in sector {s}','Illegal clearing pattern identified via change detection']},
+urban:{emoji:'🏙️',label:'Urban Expansion',badge:'det-urban',msgs:['New construction detected: {pct}% land use change','Infrastructure growth rate: {n}x baseline average','Urban heat island effect intensifying']},
+water:{emoji:'💧',label:'Water Level Change',badge:'det-water',msgs:['Water body surface area changed by {pct}%','Shoreline regression detected: {n}m over 6 months','Turbidity anomaly flagged in watershed']},
+fire:{emoji:'🔥',label:'Wildfire Risk',badge:'det-fire',msgs:['Thermal anomaly detected: {n}°C above baseline','Vegetation dryness index critical in region','Burn scar expansion: {pct}% new area affected']},
+ice:{emoji:'🧊',label:'Ice Coverage',badge:'det-ice',msgs:['Ice sheet area reduced {pct}% from last year','Glacial retreat rate: {n}m/year accelerating','Albedo change detected indicating surface melt']},
+crop:{emoji:'🌾',label:'Crop Health',badge:'det-crop',msgs:['NDVI anomaly: vegetation stress in {pct}% of fields','Irrigation pattern shift detected via SAR','Yield forecast adjusted: {n}% below seasonal norm']}
+};
+
+let mode='all';
+document.querySelectorAll('.btn').forEach(b=>{
+b.addEventListener('click',()=>{
+document.querySelectorAll('.btn').forEach(x=>x.classList.remove('active'));
+b.classList.add('active');
+mode=b.dataset.mode;
+generateDetections();
+});
+});
+
+function generateDetections(){
+const el=document.getElementById('results');
+const status=document.getElementById('scanStatus');
+el.innerHTML='';
+status.style.display='block';
+setTimeout(()=>{
+status.style.display='none';
+const count=3+Math.floor(Math.random()*3);
+for(let i=0;i<count;i++){
+setTimeout(()=>{
+const types=mode==='all'?Object.keys(detTypes):[mode];
+const t=types[Math.floor(Math.random()*types.length)];
+const d=detTypes[t];
+const region=regions[Math.floor(Math.random()*regions.length)];
+const pct=(Math.random()*30+2).toFixed(1);
+const n=(Math.random()*50+5).toFixed(0);
+const s=String.fromCharCode(65+Math.floor(Math.random()*8))+'-'+Math.floor(Math.random()*99);
+const msg=d.msgs[Math.floor(Math.random()*d.msgs.length)].replace('{pct}',pct).replace('{n}',n).replace('{s}',s);
+const conf=(70+Math.random()*29).toFixed(1);
+const sev=['low','med','high','crit'][Math.floor(Math.random()*4)];
+const sevW=[25,50,75,95][['low','med','high','crit'].indexOf(sev)]+Math.random()*5;
+el.innerHTML+=`<div class="card">
+<h3>${d.emoji} <span class="detection-badge ${d.badge}">${d.label}</span> ${region}</h3>
+<p>${msg}</p>
+<div class="stat-row">
+<div class="stat"><div class="val">${conf}%</div><div class="label">Confidence</div></div>
+<div class="stat"><div class="val">${pct}%</div><div class="label">Change</div></div>
+<div class="stat"><div class="val">${sev.toUpperCase()}</div><div class="label">Severity</div></div>
+</div>
+<div class="bar"><div class="bar-fill severity-${sev}" style="width:${sevW}%"></div></div>
+</div>`;
+},i*400);
+}
+},1500);
+}
+
+generateDetections();
+setInterval(generateDetections,20000);
+</script>
+</body>
+</html>
