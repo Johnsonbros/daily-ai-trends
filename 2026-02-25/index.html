@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Doom-O-Meter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:20px 16px}
+h1{text-align:center;font-size:1.6rem;margin-bottom:4px;background:linear-gradient(90deg,#ff4444,#ffaa00,#44ff44);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;font-size:.8rem;color:#888;margin-bottom:24px}
+.meter-wrap{position:relative;width:100%;aspect-ratio:2/1;margin-bottom:16px}
+.meter-bg{width:100%;height:100%;border-radius:200px 200px 0 0;overflow:hidden;position:relative;background:conic-gradient(from 180deg at 50% 100%,#ff2222 0deg,#ff6622 36deg,#ffaa00 72deg,#aacc00 108deg,#44dd44 144deg,#22cc88 180deg);opacity:.85}
+.meter-mask{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70%;aspect-ratio:2/1;background:#0a0a0f;border-radius:200px 200px 0 0}
+.needle{position:absolute;bottom:0;left:50%;width:4px;height:45%;background:linear-gradient(to top,#fff,#ff6644);border-radius:2px;transform-origin:bottom center;transform:translateX(-50%) rotate(0deg);transition:transform 1.2s cubic-bezier(.34,1.56,.64,1);box-shadow:0 0 12px rgba(255,100,50,.6)}
+.needle-dot{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:16px;height:16px;background:#fff;border-radius:50%;box-shadow:0 0 10px rgba(255,255,255,.5)}
+.labels{display:flex;justify-content:space-between;padding:0 8px;margin-top:-8px;font-size:.7rem;font-weight:600}
+.labels span:first-child{color:#44dd44}
+.labels span:last-child{color:#ff3333}
+.score-display{text-align:center;margin:20px 0}
+.score-num{font-size:3rem;font-weight:800;line-height:1}
+.score-label{font-size:1rem;margin-top:4px;font-weight:600}
+.verdict{text-align:center;background:#15151f;border-radius:12px;padding:16px;margin:16px 0;border:1px solid #222}
+.verdict h3{font-size:.9rem;margin-bottom:8px;color:#aaa}
+.verdict p{font-size:.85rem;line-height:1.5}
+.factors{margin:20px 0}
+.factors h3{font-size:.9rem;color:#aaa;margin-bottom:12px}
+.factor{display:flex;align-items:center;gap:10px;padding:12px;background:#12121a;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background .2s}
+.factor:hover{background:#1a1a28}
+.factor .icon{font-size:1.4rem;width:36px;text-align:center;flex-shrink:0}
+.factor .info{flex:1}
+.factor .name{font-size:.82rem;font-weight:600}
+.factor .desc{font-size:.7rem;color:#888;margin-top:2px}
+.factor .weight{font-size:.75rem;font-weight:700;flex-shrink:0;padding:4px 8px;border-radius:6px}
+.weight-doom{background:#ff333322;color:#ff5555}
+.weight-hope{background:#44dd4422;color:#44dd44}
+.weight-neutral{background:#ffaa0022;color:#ffaa00}
+.slider-section{margin:24px 0}
+.slider-section h3{font-size:.9rem;color:#aaa;margin-bottom:14px;text-align:center}
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:0 4px}
+.slider-row label{font-size:.72rem;width:80px;flex-shrink:0}
+.slider-row input[type=range]{flex:1;accent-color:#ff6644;height:6px}
+.slider-row .val{font-size:.72rem;width:28px;text-align:right;font-weight:700}
+.share-btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#ff4444,#ff8800);color:#fff;margin-top:20px;transition:transform .15s}
+.share-btn:active{transform:scale(.97)}
+.timeline{margin:24px 0}
+.timeline h3{font-size:.9rem;color:#aaa;margin-bottom:12px}
+.tl-item{display:flex;gap:10px;padding:8px 0;border-left:2px solid #333;padding-left:14px;margin-left:6px}
+.tl-dot{width:10px;height:10px;border-radius:50%;margin-left:-20px;flex-shrink:0;margin-top:3px}
+.tl-date{font-size:.65rem;color:#666}
+.tl-text{font-size:.75rem;line-height:1.4}
+footer{text-align:center;padding:24px 0;font-size:.65rem;color:#555}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔮 AI Doom-O-Meter</h1>
+<p class="subtitle">Real-time AI sentiment: Are we doomed or booming?</p>
+
+<div class="meter-wrap">
+<div class="meter-bg"><div class="meter-mask"></div></div>
+<div class="needle" id="needle"><div class="needle-dot"></div></div>
+</div>
+<div class="labels"><span>🌈 UTOPIA</span><span>💀 DOOM</span></div>
+
+<div class="score-display">
+<div class="score-num" id="scoreNum">--</div>
+<div class="score-label" id="scoreLabel">Calculating...</div>
+</div>
+
+<div class="verdict" id="verdict">
+<h3>📋 TODAY'S VERDICT</h3>
+<p id="verdictText">Analyzing signals...</p>
+</div>
+
+<div class="factors" id="factorsList">
+<h3>📊 DOOM/HOPE SIGNALS (tap to toggle)</h3>
+</div>
+
+<div class="slider-section">
+<h3>🎛️ ADJUST YOUR WORLDVIEW</h3>
+<div class="slider-row"><label>Tech Optimism</label><input type="range" min="0" max="100" value="50" id="s1"><span class="val" id="v1">50</span></div>
+<div class="slider-row"><label>Job Anxiety</label><input type="range" min="0" max="100" value="50" id="s2"><span class="val" id="v2">50</span></div>
+<div class="slider-row"><label>Regulation Trust</label><input type="range" min="0" max="100" value="50" id="s3"><span class="val" id="v3">50</span></div>
+<div class="slider-row"><label>AI Safety Worry</label><input type="range" min="0" max="100" value="50" id="s4"><span class="val" id="v4">50</span></div>
+</div>
+
+<div class="timeline">
+<h3>📰 THIS WEEK'S TIMELINE</h3>
+<div id="timeline"></div>
+</div>
+
+<button class="share-btn" onclick="shareResult()">📸 Share My Doom Score</button>
+
+<footer>AI Doom-O-Meter · Feb 25, 2026 · Inspired by the viral AI doomer discourse</footer>
+</div>
+
+<script>
+const factors=[
+{icon:"📉",name:"Investors Spooked by AI Doomer Articles",desc:"Reuters: dystopian AI outlooks go viral, market jitters",w:-18,on:true},
+{icon:"💸",name:"$700B+ AI Infrastructure Bet",desc:"Big Tech spending beyond cash flow on AI",w:12,on:true},
+{icon:"📝",name:"Viral Doomer Essay Goes Mainstream",desc:"Stratechery: 'Another Viral AI Doomer Article' — lacks nuance but resonates",w:-14,on:true},
+{icon:"🧠",name:"AI Reads Brain MRIs in Seconds",desc:"U of Michigan: 97.5% accuracy on 50+ conditions",w:20,on:true},
+{icon:"🎬",name:"Seedance 2.0 Video AI",desc:"Cinema-quality AI video from text prompts",w:15,on:true},
+{icon:"⚖️",name:"Copyright Wars Escalate",desc:"Disney vs ByteDance over AI deepfakes",w:-10,on:true},
+{icon:"🤖",name:"AI Agents Replace Knowledge Work",desc:"CEOs warn disruption 'bigger than COVID'",w:-22,on:true},
+{icon:"🌍",name:"Global AI Governance Forming",desc:"20+ nations at India AI Summit shape regulation",w:8,on:true},
+{icon:"🔒",name:"Prompt Injection Worms Spread",desc:"Self-replicating AI attacks in agent networks",w:-12,on:true},
+{icon:"🏥",name:"AI Diagnostics Save Lives",desc:"Real-time satellite + AI environmental monitoring",w:16,on:true}
+];
+
+const timeline=[
+{date:"Feb 25",text:"Investors spooked as dystopian AI outlooks go viral",color:"#ff4444"},
+{date:"Feb 24",text:"AI + satellite data detects environmental changes in real-time",color:"#44dd44"},
+{date:"Feb 23",text:"Zero-prompt visual AI art builders go mainstream",color:"#ffaa00"},
+{date:"Feb 22",text:"Google's PaperBanana auto-generates research diagrams",color:"#44dd44"},
+{date:"Feb 21",text:"Big Tech bets $700B+ on AI infrastructure",color:"#ffaa00"},
+{date:"Feb 20",text:"JioHotstar launches ChatGPT voice assistant for streaming",color:"#44dd44"},
+{date:"Feb 19",text:"AI reads brain MRIs in seconds with 97.5% accuracy",color:"#44dd44"}
+];
+
+function calcScore(){
+let base=50;
+factors.forEach(f=>{if(f.on)base+=f.w*0.5});
+const s1=+document.getElementById('s1').value;
+const s2=+document.getElementById('s2').value;
+const s3=+document.getElementById('s3').value;
+const s4=+document.getElementById('s4').value;
+base+=(s1-50)*0.15;
+base-=(s2-50)*0.15;
+base+=(s3-50)*0.1;
+base-=(s4-50)*0.15;
+return Math.max(0,Math.min(100,Math.round(base)));
+}
+
+const verdicts=[
+{max:20,label:"🌈 AI Utopia Incoming",color:"#44dd44",text:"The signals are overwhelmingly positive. AI is curing diseases, creating art, and expanding human capability. The doomers can wait."},
+{max:35,label:"😎 Cautiously Optimistic",color:"#88cc44",text:"More hope than fear. AI breakthroughs are real, investment is flowing, and practical applications are saving lives. Keep building."},
+{max:50,label:"🤷 Perfectly Balanced",color:"#ffaa00",text:"The vibes are mixed. Groundbreaking medical AI vs. $700B bets that might not pay off. Doomer articles go viral while AI saves lives. Classic 2026."},
+{max:65,label:"😬 Getting Nervous",color:"#ff8844",text:"Warning signs are stacking up. Investor panic, job displacement fears, and AI security threats are outweighing the breakthroughs. Buckle up."},
+{max:80,label:"🚨 Doom Adjacent",color:"#ff5544",text:"The AI doomer articles aren't just viral — they're hitting home. Markets are rattled, jobs are threatened, and the copyright wars are just beginning."},
+{max:101,label:"💀 Maximum Doom",color:"#ff2222",text:"Pack your bags for the bunker. Every signal points to chaos — from market crashes to AI worms to unstoppable deepfakes. (Or maybe just touch grass?)"}
+];
+
+function render(){
+const score=calcScore();
+const doom=100-score;
+const deg=-90+(doom/100)*180;
+document.getElementById('needle').style.transform=`translateX(-50%) rotate(${deg}deg)`;
+document.getElementById('scoreNum').textContent=doom;
+const v=verdicts.find(v=>doom<=v.max);
+document.getElementById('scoreNum').style.color=v.color;
+document.getElementById('scoreLabel').textContent=v.label;
+document.getElementById('scoreLabel').style.color=v.color;
+document.getElementById('verdictText').textContent=v.text;
+
+const fl=document.getElementById('factorsList');
+fl.innerHTML='<h3>📊 DOOM/HOPE SIGNALS (tap to toggle)</h3>';
+factors.forEach((f,i)=>{
+const el=document.createElement('div');
+el.className='factor';
+el.style.opacity=f.on?1:.4;
+const wc=f.w<0?'weight-doom':f.w>0?'weight-hope':'weight-neutral';
+const ws=f.w>0?'+'+f.w:f.w;
+el.innerHTML=`<div class="icon">${f.icon}</div><div class="info"><div class="name">${f.name}</div><div class="desc">${f.desc}</div></div><div class="weight ${wc}">${ws}</div>`;
+el.onclick=()=>{f.on=!f.on;render()};
+fl.appendChild(el);
+});
+}
+
+function renderTimeline(){
+const tl=document.getElementById('timeline');
+timeline.forEach(t=>{
+tl.innerHTML+=`<div class="tl-item"><div class="tl-dot" style="background:${t.color}"></div><div><div class="tl-date">${t.date}</div><div class="tl-text">${t.text}</div></div></div>`;
+});
+}
+
+['s1','s2','s3','s4'].forEach((id,i)=>{
+document.getElementById(id).oninput=e=>{
+document.getElementById('v'+(i+1)).textContent=e.target.value;
+render();
+};
+});
+
+function shareResult(){
+const score=100-calcScore();
+const v=verdicts.find(v=>score<=v.max);
+const text=`🔮 My AI Doom Score: ${score}/100 — ${v.label}\n\nAre we doomed or booming? Check the AI Doom-O-Meter!`;
+if(navigator.share){navigator.share({title:'AI Doom-O-Meter',text})}
+else{navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!'))}
+}
+
+renderTimeline();
+setTimeout(render,300);
+</script>
+</body>
+</html>
