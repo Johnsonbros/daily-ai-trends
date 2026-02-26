@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BeatViz — AI Beat Visualizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'SF Pro','Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+.ui{position:relative;z-index:1;text-align:center;pointer-events:none}
+.ui *{pointer-events:auto}
+h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#ff6ec4,#7873f5,#4fc3f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.3rem;letter-spacing:-.02em}
+.sub{font-size:.85rem;color:#888;margin-bottom:1.5rem}
+.controls{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;padding:.6rem 1.2rem;border-radius:2rem;font-size:.85rem;cursor:pointer;transition:all .2s;backdrop-filter:blur(8px)}
+button:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3)}
+button.active{background:linear-gradient(135deg,#ff6ec4,#7873f5);border-color:transparent;font-weight:600}
+.mode-row{display:flex;gap:.5rem;justify-content:center;margin-bottom:1rem}
+.mode-btn{padding:.4rem .9rem;font-size:.75rem;border-radius:1.5rem}
+.bpm{font-size:3rem;font-weight:900;font-variant-numeric:tabular-nums;background:linear-gradient(135deg,#ff6ec4,#7873f5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;opacity:.7;transition:opacity .2s}
+.bpm.beat{opacity:1}
+.bpm-label{font-size:.7rem;color:#666;text-transform:uppercase;letter-spacing:.15em}
+.hint{position:fixed;bottom:1.5rem;left:0;right:0;text-align:center;font-size:.7rem;color:#555;z-index:2}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <h1>BeatViz</h1>
+  <p class="sub">AI-Powered Beat Visualizer</p>
+  <div class="controls">
+    <button id="micBtn">🎤 Mic</button>
+    <button id="fileBtn">🎵 Upload</button>
+    <input type="file" id="fileIn" accept="audio/*">
+  </div>
+  <div class="mode-row">
+    <button class="mode-btn active" data-mode="rings">Rings</button>
+    <button class="mode-btn" data-mode="bars">Bars</button>
+    <button class="mode-btn" data-mode="wave">Wave</button>
+    <button class="mode-btn" data-mode="particles">Particles</button>
+  </div>
+  <div class="bpm" id="bpm">—</div>
+  <div class="bpm-label">estimated bpm</div>
+</div>
+<p class="hint">Tap mic or upload a track • visuals react to your audio in real-time</p>
+
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W,H,audioCtx,analyser,dataArray,freqArray,source,mode='rings',animId;
+let beatTimes=[],lastBeat=0,bpmVal=0,energy=0,prevEnergy=0,particles=[];
+
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
+window.addEventListener('resize',resize);resize();
+
+function initAudio(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  analyser=audioCtx.createAnalyser();
+  analyser.fftSize=2048;
+  analyser.smoothingTimeConstant=.8;
+  dataArray=new Uint8Array(analyser.fftSize);
+  freqArray=new Uint8Array(analyser.frequencyBinCount);
+}
+
+document.getElementById('micBtn').onclick=async function(){
+  initAudio();
+  if(source){source.disconnect();source=null}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    source=audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    this.classList.add('active');
+    document.getElementById('fileBtn').classList.remove('active');
+    if(!animId)draw();
+  }catch(e){alert('Mic access denied')}
+};
+
+document.getElementById('fileBtn').onclick=()=>document.getElementById('fileIn').click();
+document.getElementById('fileIn').onchange=async function(e){
+  const file=e.target.files[0];if(!file)return;
+  initAudio();
+  if(source){source.disconnect();source=null}
+  const buf=await file.arrayBuffer();
+  const decoded=await audioCtx.decodeAudioData(buf);
+  source=audioCtx.createBufferSource();
+  source.buffer=decoded;
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  source.start();
+  document.getElementById('fileBtn').classList.add('active');
+  document.getElementById('micBtn').classList.remove('active');
+  if(!animId)draw();
+};
+
+document.querySelectorAll('.mode-btn').forEach(b=>b.onclick=function(){
+  document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
+  this.classList.add('active');mode=this.dataset.mode;particles=[];
+});
+
+function detectBeat(){
+  analyser.getByteFrequencyData(freqArray);
+  let sum=0;for(let i=0;i<freqArray.length/4;i++)sum+=freqArray[i];
+  energy=sum/(freqArray.length/4);
+  const now=performance.now();
+  if(energy>prevEnergy*1.4&&energy>100&&now-lastBeat>250){
+    lastBeat=now;
+    beatTimes.push(now);
+    if(beatTimes.length>12)beatTimes.shift();
+    if(beatTimes.length>2){
+      let diffs=[];
+      for(let i=1;i<beatTimes.length;i++)diffs.push(beatTimes[i]-beatTimes[i-1]);
+      const avg=diffs.reduce((a,b)=>a+b)/diffs.length;
+      bpmVal=Math.round(60000/avg);
+    }
+    document.getElementById('bpm').textContent=bpmVal||'—';
+    document.getElementById('bpm').classList.add('beat');
+    setTimeout(()=>document.getElementById('bpm').classList.remove('beat'),150);
+    // spawn particles on beat
+    for(let i=0;i<15;i++)particles.push({x:W/2,y:H/2,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*8,life:1,hue:Math.random()*360,size:Math.random()*4+2});
+  }
+  prevEnergy=energy;
+}
+
+function hsl(h,s,l,a=1){return`hsla(${h},${s}%,${l}%,${a})`}
+
+function drawRings(t){
+  analyser.getByteFrequencyData(freqArray);
+  const cx=W/2,cy=H/2,beatPulse=Math.max(0,1-(performance.now()-lastBeat)/300);
+  for(let ring=0;ring<6;ring++){
+    const r=80+ring*45+beatPulse*20;
+    const slices=64;
+    ctx.beginPath();
+    for(let i=0;i<=slices;i++){
+      const idx=Math.floor((ring*slices+i)%freqArray.length);
+      const v=freqArray[idx]/255;
+      const angle=(i/slices)*Math.PI*2-Math.PI/2;
+      const rad=r+v*60;
+      const x=cx+Math.cos(angle)*rad,y=cy+Math.sin(angle)*rad;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle=hsl(280+ring*30+t*.02,80,55+beatPulse*20,.6+beatPulse*.3);
+    ctx.lineWidth=2+beatPulse*2;
+    ctx.stroke();
+  }
+}
+
+function drawBars(){
+  analyser.getByteFrequencyData(freqArray);
+  const bars=80,bw=W/bars,beatPulse=Math.max(0,1-(performance.now()-lastBeat)/300);
+  for(let i=0;i<bars;i++){
+    const v=freqArray[Math.floor(i*freqArray.length/bars)]/255;
+    const h=v*H*.7+beatPulse*30;
+    const hue=200+v*160;
+    ctx.fillStyle=hsl(hue,80,50+beatPulse*20,.8);
+    ctx.fillRect(i*bw+1,H-h,bw-2,h);
+    // mirror top
+    ctx.fillStyle=hsl(hue,80,50+beatPulse*20,.3);
+    ctx.fillRect(i*bw+1,0,bw-2,h*.3);
+  }
+}
+
+function drawWave(){
+  analyser.getByteTimeDomainData(dataArray);
+  const beatPulse=Math.max(0,1-(performance.now()-lastBeat)/300);
+  for(let pass=0;pass<3;pass++){
+    ctx.beginPath();
+    const sl=dataArray.length;
+    for(let i=0;i<sl;i++){
+      const v=(dataArray[i]/128-1)*(1+beatPulse*.5);
+      const x=i/sl*W;
+      const y=H/2+v*H*.35+Math.sin(i*.01+pass)*20;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle=hsl(300+pass*60,80,60+beatPulse*15,.5);
+    ctx.lineWidth=2+beatPulse*3;
+    ctx.stroke();
+  }
+}
+
+function drawParticles(){
+  analyser.getByteFrequencyData(freqArray);
+  const bars=40,bw=W/bars,beatPulse=Math.max(0,1-(performance.now()-lastBeat)/300);
+  // background bars subtle
+  for(let i=0;i<bars;i++){
+    const v=freqArray[Math.floor(i*freqArray.length/bars)]/255;
+    ctx.fillStyle=hsl(280+i*4,60,30,.15+v*.2);
+    ctx.fillRect(i*bw,H-v*H*.3,bw-1,v*H*.3);
+  }
+  // particles
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life-=.015;
+    if(p.life>0){
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+      ctx.fillStyle=hsl(p.hue,90,60,p.life);ctx.fill();
+    }
+  });
+  particles=particles.filter(p=>p.life>0);
+}
+
+function draw(){
+  const t=performance.now();
+  ctx.fillStyle='rgba(10,10,15,.15)';ctx.fillRect(0,0,W,H);
+  if(analyser){
+    detectBeat();
+    if(mode==='rings')drawRings(t);
+    else if(mode==='bars')drawBars();
+    else if(mode==='wave')drawWave();
+    else drawParticles();
+  }
+  animId=requestAnimationFrame(draw);
+}
+</script>
+</body>
+</html>
