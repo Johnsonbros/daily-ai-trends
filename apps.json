@@ -23,5 +23,6 @@
   {"date": "2026-02-23", "name": "Prompt Palette", "trend": "Zero-prompt AI image generation tools go mainstream — visual prompt builders replace typing as the new way to talk to AI art generators", "tag": "Image/Creative", "path": "2026-02-23/index.html"},
   {"date": "2026-02-24", "name": "AI Earth Scanner", "trend": "University of Minnesota researchers combine AI + satellite data to detect environmental changes in real-time — deforestation, urban sprawl, water loss, and climate shifts", "tag": "Climate/Visualization", "path": "2026-02-24/index.html"},
   {"date": "2026-02-25", "name": "AI Doom-O-Meter", "trend": "Viral AI doomer articles spook investors — Reuters reports dystopian AI outlooks rattling markets as $700B bets show cracks", "tag": "Sentiment/Interactive", "path": "2026-02-25/index.html"},
-  {"date": "2026-02-26", "name": "BeatViz", "trend": "AI-powered music visualization tools like BeatViz.ai go viral — auto-syncing visuals to audio with beat detection and real-time effects", "tag": "Audio/Creative", "path": "2026-02-26/index.html"}
+  {"date": "2026-02-26", "name": "BeatViz", "trend": "AI-powered music visualization tools like BeatViz.ai go viral — auto-syncing visuals to audio with beat detection and real-time effects", "tag": "Audio/Creative", "path": "2026-02-26/index.html"},
+  {"date": "2026-02-27", "name": "NanaBanana Lab", "trend": "Google launches Nano Banana 2, updating its viral AI image generator — faster, higher quality, challenging OpenAI", "tag": "Image/Creative", "path": "2026-02-27/index.html"}
 ]

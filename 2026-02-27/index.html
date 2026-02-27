@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanaBanana Lab — AI Image Prompt Studio</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#14141f;--border:#1e1e30;--accent:#f5c518;--accent2:#ff6b35;--text:#e8e8f0;--dim:#6b6b8a;--success:#22c55e;--purple:#a855f7}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.header{text-align:center;padding:2rem 1rem 1rem;background:linear-gradient(180deg,#1a1a2e 0%,var(--bg) 100%)}
+.header h1{font-size:2rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.3rem}
+.header p{color:var(--dim);font-size:.85rem}
+.badge{display:inline-block;background:var(--accent);color:#000;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:1px}
+.container{max-width:600px;margin:0 auto;padding:1rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+.card h3{font-size:.9rem;color:var(--accent);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+.style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem}
+.style-btn{background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:.6rem .4rem;text-align:center;cursor:pointer;transition:all .2s;font-size:.75rem;color:var(--text)}
+.style-btn:hover{border-color:var(--accent);transform:scale(1.03)}
+.style-btn.active{border-color:var(--accent);background:rgba(245,197,24,.08);box-shadow:0 0 12px rgba(245,197,24,.15)}
+.style-btn .icon{font-size:1.4rem;display:block;margin-bottom:.25rem}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:.75rem;color:var(--text);font-size:.9rem;resize:vertical;min-height:80px;font-family:inherit}
+textarea:focus{outline:none;border-color:var(--accent)}
+.enhancers{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:.72rem;cursor:pointer;transition:all .2s;color:var(--dim)}
+.chip:hover,.chip.active{background:rgba(168,85,247,.12);border-color:var(--purple);color:var(--purple)}
+.gen-btn{width:100%;padding:.9rem;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;transition:all .3s;letter-spacing:.5px}
+.gen-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,197,24,.25)}
+.gen-btn:active{transform:scale(.98)}
+.gen-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.result-area{margin-top:1rem;display:none}
+.result-area.show{display:block}
+.canvas-wrap{position:relative;width:100%;aspect-ratio:1;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--border)}
+.canvas-wrap canvas{width:100%;height:100%;display:block}
+.result-prompt{margin-top:.75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:.75rem;font-size:.78rem;color:var(--dim);line-height:1.5;position:relative}
+.result-prompt .copy-btn{position:absolute;top:.5rem;right:.5rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:.65rem;color:var(--accent);cursor:pointer}
+.history{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.75rem}
+.history-item{aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.history-item:hover{border-color:var(--accent)}
+.history-item canvas{width:100%;height:100%}
+.slider-row{display:flex;align-items:center;gap:.75rem;margin:.5rem 0}
+.slider-row label{font-size:.75rem;color:var(--dim);min-width:70px}
+.slider-row input[type=range]{flex:1;accent-color:var(--accent)}
+.slider-row span{font-size:.75rem;color:var(--accent);min-width:30px;text-align:right}
+.loading{display:none;text-align:center;padding:2rem}
+.loading.show{display:block}
+.loading .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto .75rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stat-row{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.stat-row:last-child{border:none}
+.stat-row .val{color:var(--accent);font-weight:600}
+footer{text-align:center;padding:2rem 1rem;color:var(--dim);font-size:.7rem}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="badge">🔥 Trending Today</div>
+<h1>🍌 NanaBanana Lab</h1>
+<p>AI Image Prompt Studio — inspired by Google's viral Nano Banana 2</p>
+</div>
+
+<div class="container">
+<div class="card">
+<h3>🎨 Style</h3>
+<div class="style-grid" id="styles">
+<div class="style-btn active" data-style="photorealistic"><span class="icon">📸</span>Photorealistic</div>
+<div class="style-btn" data-style="anime"><span class="icon">⛩️</span>Anime</div>
+<div class="style-btn" data-style="oil-painting"><span class="icon">🖼️</span>Oil Painting</div>
+<div class="style-btn" data-style="pixel-art"><span class="icon">👾</span>Pixel Art</div>
+<div class="style-btn" data-style="watercolor"><span class="icon">🎨</span>Watercolor</div>
+<div class="style-btn" data-style="3d-render"><span class="icon">💎</span>3D Render</div>
+</div>
+</div>
+
+<div class="card">
+<h3>✍️ Describe Your Image</h3>
+<textarea id="prompt" placeholder="A golden retriever astronaut floating in space, Earth in the background..."></textarea>
+<div class="enhancers" id="enhancers">
+<span class="chip" data-tag="cinematic lighting">🎬 Cinematic</span>
+<span class="chip" data-tag="bokeh background">📷 Bokeh</span>
+<span class="chip" data-tag="dramatic shadows">🌑 Dramatic</span>
+<span class="chip" data-tag="vibrant colors">🌈 Vibrant</span>
+<span class="chip" data-tag="golden hour">🌅 Golden Hour</span>
+<span class="chip" data-tag="macro detail">🔬 Macro</span>
+<span class="chip" data-tag="ethereal glow">✨ Ethereal</span>
+<span class="chip" data-tag="moody atmosphere">🌫️ Moody</span>
+<span class="chip" data-tag="neon lights">💜 Neon</span>
+<span class="chip" data-tag="retro vintage">📻 Retro</span>
+</div>
+</div>
+
+<div class="card">
+<h3>⚙️ Parameters</h3>
+<div class="slider-row">
+<label>Creativity</label>
+<input type="range" id="creativity" min="1" max="10" value="7">
+<span id="creativityVal">7</span>
+</div>
+<div class="slider-row">
+<label>Detail</label>
+<input type="range" id="detail" min="1" max="10" value="8">
+<span id="detailVal">8</span>
+</div>
+<div class="slider-row">
+<label>Chaos</label>
+<input type="range" id="chaos" min="0" max="10" value="3">
+<span id="chaosVal">3</span>
+</div>
+</div>
+
+<button class="gen-btn" id="generateBtn">🍌 Generate Image</button>
+
+<div class="loading" id="loading">
+<div class="spinner"></div>
+<p style="color:var(--dim);font-size:.85rem">Generating with NanaBanana 2...</p>
+</div>
+
+<div class="result-area" id="resultArea">
+<div class="canvas-wrap"><canvas id="mainCanvas" width="512" height="512"></canvas></div>
+<div class="result-prompt" id="resultPrompt">
+<button class="copy-btn" id="copyBtn">📋 Copy</button>
+<div id="promptText"></div>
+</div>
+<div class="card" style="margin-top:.75rem">
+<h3>📊 Generation Stats</h3>
+<div class="stat-row"><span>Style</span><span class="val" id="statStyle">—</span></div>
+<div class="stat-row"><span>Seed</span><span class="val" id="statSeed">—</span></div>
+<div class="stat-row"><span>Steps</span><span class="val" id="statSteps">—</span></div>
+<div class="stat-row"><span>Time</span><span class="val" id="statTime">—</span></div>
+</div>
+</div>
+
+<div class="card" id="historyCard" style="display:none">
+<h3>🕐 History</h3>
+<div class="history" id="history"></div>
+</div>
+</div>
+
+<footer>
+<p>Built by <a href="https://github.com/Johnsonbros/daily-ai-trends">Daily AI Trends</a> — Feb 27, 2026</p>
+<p style="margin-top:.3rem">Inspired by Google's Nano Banana 2 viral AI image generator</p>
+</footer>
+
+<script>
+const styles=document.querySelectorAll('.style-btn'),chips=document.querySelectorAll('.chip'),
+promptEl=document.getElementById('prompt'),canvas=document.getElementById('mainCanvas'),
+ctx=canvas.getContext('2d'),genBtn=document.getElementById('generateBtn'),
+loading=document.getElementById('loading'),resultArea=document.getElementById('resultArea');
+let activeStyle='photorealistic',activeTags=new Set(),history=[];
+
+styles.forEach(s=>s.addEventListener('click',()=>{
+styles.forEach(x=>x.classList.remove('active'));s.classList.add('active');
+activeStyle=s.dataset.style}));
+
+chips.forEach(c=>c.addEventListener('click',()=>{
+c.classList.toggle('active');
+c.classList.contains('active')?activeTags.add(c.dataset.tag):activeTags.delete(c.dataset.tag)}));
+
+['creativity','detail','chaos'].forEach(id=>{
+const sl=document.getElementById(id);
+sl.addEventListener('input',()=>document.getElementById(id+'Val').textContent=sl.value)});
+
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i);return Math.abs(h)}
+function seededRandom(seed){return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
+
+const palettes={
+photorealistic:['#2c3e50','#34495e','#7f8c8d','#bdc3c7','#ecf0f1','#e74c3c','#3498db'],
+anime:['#ff6b9d','#c44569','#f8b500','#3dc1d3','#e056fd','#686de0','#badc58'],
+'oil-painting':['#8b4513','#cd853f','#daa520','#2f4f4f','#556b2f','#800020','#4a0e4e'],
+'pixel-art':['#ff0055','#00ff88','#0088ff','#ffcc00','#ff6600','#aa00ff','#00cccc'],
+watercolor:['#a8d8ea','#aa96da','#fcbad3','#ffffd2','#b5e8cc','#f0c38e','#d4a5a5'],
+'3d-render':['#00d2ff','#7b2ff7','#ff0844','#00f260','#ff6b35','#f5c518','#e040fb']
+};
+
+function generateArt(prompt,style,creativity,detail,chaos){
+const w=512,h=512,seed=hash(prompt+style+Date.now());
+const rng=seededRandom(seed);
+const pal=palettes[style]||palettes.photorealistic;
+ctx.clearRect(0,0,w,h);
+
+// Background gradient
+const bg=ctx.createLinearGradient(0,0,w,h);
+bg.addColorStop(0,pal[0]);bg.addColorStop(1,pal[1]);
+ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+
+const layers=3+Math.floor(detail/3);
+for(let layer=0;layer<layers;layer++){
+const shapes=10+creativity*3+Math.floor(rng()*chaos*5);
+for(let i=0;i<shapes;i++){
+const x=rng()*w,y=rng()*h,size=20+rng()*80*(1+chaos/5);
+const color=pal[Math.floor(rng()*pal.length)];
+ctx.globalAlpha=.1+rng()*.5;
+ctx.fillStyle=color;
+
+const shapeType=Math.floor(rng()*5);
+ctx.beginPath();
+if(shapeType===0){ctx.arc(x,y,size,0,Math.PI*2)}
+else if(shapeType===1){
+const pts=3+Math.floor(rng()*4);
+for(let p=0;p<pts;p++){
+const a=(Math.PI*2/pts)*p-Math.PI/2,r=size*(0.5+rng()*0.5);
+p===0?ctx.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r):ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r)}
+ctx.closePath();
+} else if(shapeType===2){
+ctx.ellipse(x,y,size,size*(0.3+rng()*0.7),rng()*Math.PI,0,Math.PI*2);
+} else if(shapeType===3){
+for(let s=0;s<5;s++){
+const sx=x+rng()*size*2-size,sy=y+rng()*size*2-size;
+ctx.moveTo(sx,sy);ctx.arc(sx,sy,size*(.1+rng()*.3),0,Math.PI*2)}
+} else {
+const curves=2+Math.floor(rng()*3);
+ctx.moveTo(x,y);
+for(let c=0;c<curves;c++){
+ctx.bezierCurveTo(x+rng()*size*2-size,y+rng()*size*2-size,
+x+rng()*size*2-size,y+rng()*size*2-size,x+rng()*size*2-size,y+rng()*size*2-size)}
+}
+ctx.fill();
+
+if(style==='3d-render'||style==='pixel-art'){
+ctx.strokeStyle=color;ctx.lineWidth=1+rng()*2;ctx.globalAlpha*=.5;ctx.stroke()}
+}}
+
+// Overlay effects
+if(style==='watercolor'){
+ctx.globalAlpha=.08;ctx.fillStyle='#fff';
+for(let i=0;i<200;i++){ctx.fillRect(rng()*w,rng()*h,rng()*4,rng()*4)}}
+if(style==='oil-painting'){
+ctx.globalAlpha=.03;
+for(let i=0;i<100;i++){
+ctx.strokeStyle=pal[Math.floor(rng()*pal.length)];ctx.lineWidth=2+rng()*6;
+ctx.beginPath();ctx.moveTo(rng()*w,rng()*h);
+ctx.bezierCurveTo(rng()*w,rng()*h,rng()*w,rng()*h,rng()*w,rng()*h);ctx.stroke()}}
+
+// Vignette
+ctx.globalAlpha=1;
+const vg=ctx.createRadialGradient(w/2,h/2,w*.3,w/2,h/2,w*.75);
+vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,0.5)');
+ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
+
+return seed;
+}
+
+function buildFinalPrompt(){
+let p=promptEl.value.trim()||'abstract digital landscape';
+const tags=[...activeTags];
+if(tags.length)p+=', '+tags.join(', ');
+p+=`, ${activeStyle.replace('-',' ')} style`;
+return p;
+}
+
+genBtn.addEventListener('click',()=>{
+genBtn.disabled=true;loading.classList.add('show');resultArea.classList.remove('show');
+const start=performance.now();
+const fp=buildFinalPrompt();
+const cr=+document.getElementById('creativity').value;
+const dt=+document.getElementById('detail').value;
+const ch=+document.getElementById('chaos').value;
+
+setTimeout(()=>{
+const seed=generateArt(fp,activeStyle,cr,dt,ch);
+const elapsed=((performance.now()-start)/1000).toFixed(1);
+const steps=20+dt*5+cr*2;
+
+document.getElementById('promptText').textContent=fp;
+document.getElementById('statStyle').textContent=activeStyle.replace('-',' ');
+document.getElementById('statSeed').textContent=seed;
+document.getElementById('statSteps').textContent=steps;
+document.getElementById('statTime').textContent=elapsed+'s';
+
+loading.classList.remove('show');resultArea.classList.add('show');genBtn.disabled=false;
+
+// Save to history
+const hCanvas=document.createElement('canvas');hCanvas.width=128;hCanvas.height=128;
+hCanvas.getContext('2d').drawImage(canvas,0,0,128,128);
+history.unshift(hCanvas);
+if(history.length>6)history.pop();
+const hDiv=document.getElementById('history');
+const hCard=document.getElementById('historyCard');
+if(history.length>0){hCard.style.display='block';hDiv.innerHTML='';
+history.forEach(c=>{const d=document.createElement('div');d.className='history-item';d.appendChild(c);hDiv.appendChild(d)})}
+},800+Math.random()*1200);
+});
+
+document.getElementById('copyBtn').addEventListener('click',()=>{
+navigator.clipboard.writeText(document.getElementById('promptText').textContent);
+document.getElementById('copyBtn').textContent='✅ Copied!';
+setTimeout(()=>document.getElementById('copyBtn').textContent='📋 Copy',1500)});
+</script>
+</body>
+</html>
